@@ -50,9 +50,10 @@ class ControlPanel(tk.Frame):
         # ── limite de profundidade (visível só para DLS) ──
         self._depth_frame = tk.Frame(self, bg=COLORS['panel'])
         self._depth_frame.pack(**pad, fill='x')
-        tk.Label(self._depth_frame, text='Limite de Profundidade:',
-                 font=self._fonts['section'], bg=COLORS['panel'],
-                 fg=COLORS['text_dim']).pack(anchor='w')
+        self._depth_label = tk.Label(self._depth_frame, text='Limite de Profundidade:',
+                   font=self._fonts['section'], bg=COLORS['panel'],
+                   fg=COLORS['text_dim'])
+        self._depth_label.pack(anchor='w')
         self.depth_var = tk.IntVar(value=3)
         tk.Spinbox(self._depth_frame, from_=1, to=20,
                    textvariable=self.depth_var, width=6,
@@ -127,8 +128,18 @@ class ControlPanel(tk.Frame):
         )
 
     def _on_method_change(self, _event=None):
-        if self.method_var.get() == 'Profundidade Limitada':
+        method = self.method_var.get()
+
+        if method == 'Profundidade Limitada':
+            self._depth_label.config(text='Limite de Profundidade:')
+            self.depth_var.set(3)
             self._depth_frame.pack(padx=16, pady=4, fill='x')
+
+        elif method == 'Aprofundamento Iterativo (IDDFS)':
+            self._depth_label.config(text='Profundidade Máxima:')
+            self.depth_var.set(20)
+            self._depth_frame.pack(padx=16, pady=4, fill='x')
+
         else:
             self._depth_frame.pack_forget()
 
