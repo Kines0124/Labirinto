@@ -469,7 +469,7 @@ class buscaNP(object):
                         # Encontrou encontro com a outra AMPLITUDE
                         #if t_novo in visitado2:    # grid
                         if novo in visitado2: # grafo
-                            return self.exibirCaminho_Bid(novo, visitado1, visitado2)
+                            return self.exibirCaminho_bid(novo, visitado1, visitado2)
             
             # ****** Executa AMPLITUDE a partir do OBJETIVO *******
             # Quantidade de nós no nível atual
@@ -499,6 +499,6 @@ class buscaNP(object):
                         # Encontrou encontro com a outra AMPLITUDE
                         #if t_novo in visitado1:    # grid
                         if novo in visitado1:      # grafo
-                            return self.exibirCaminho_Bid(novo, visitado1, visitado2)
+                            return self.exibirCaminho_bid(novo, visitado1, visitado2)
                         
         return None
