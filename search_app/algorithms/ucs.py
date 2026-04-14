@@ -12,9 +12,25 @@ Como ativar
 """
 
 from search_result import SearchResult
+from algorithms.conversor import Conversor
+from algorithms.BuscaP import buscaP
 
 
 def search(start: str, goal: str, graph: dict,
            heuristic: dict = None, depth_limit: int = None) -> SearchResult:
-    # ── TODO: implemente aqui ─────────────────────────────────────────────────
-    raise NotImplementedError('UCS ainda não implementado.')
+   
+   nos, grafo = Conversor.converter_grafo_ponderado(graph)
+
+   resultado = buscaP().custo_uniforme_grafo(start, goal, nos, grafo)
+
+   if resultado is None:
+      return SearchResult()
+   
+   caminho, custo = resultado
+
+   return SearchResult(
+      path=caminho,
+      cost = custo,
+      nodes_expanded=0,
+      depth=len(caminho) - 1,
+   )

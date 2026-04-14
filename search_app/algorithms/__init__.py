@@ -17,7 +17,7 @@ from algorithms.dfs      import search as dfs_search
 from algorithms.dls      import search as dls_search
 from algorithms.iddfs    import search as iddfs_search
 from algorithms.bidi     import search as bidi_search
-# from algorithms.ucs      import search as ucs_search
+from algorithms.ucs      import search as ucs_search
 # from algorithms.greedy   import search as greedy_search
 # from algorithms.astar    import search as astar_search
 # from algorithms.ida_star import search as ida_star_search
@@ -32,7 +32,7 @@ REGISTRY: dict[str, callable] = {
     'Profundidade Limitada':            dls_search,   # TODO: trocar por dls_search
     'Aprofundamento Iterativo (IDDFS)': iddfs_search,   # TODO: trocar por iddfs_search
     'Bidirecional':                     bidi_search,   # TODO: trocar por bidi_search
-    'Custo Uniforme (UCS)':             _stub_search,   # TODO: trocar por ucs_search
+    'Custo Uniforme (UCS)':             ucs_search,   # TODO: trocar por ucs_search
     'Greedy Best-First':                _stub_search,   # TODO: trocar por greedy_search
     'A* (A-estrela)':                   _stub_search,   # TODO: trocar por astar_search
     'AIA* (A* Iterativo)':              _stub_search,   # TODO: trocar por ida_star_search

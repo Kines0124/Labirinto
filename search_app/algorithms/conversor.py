@@ -12,3 +12,9 @@ class Conversor(object):
         for i in range(len(path) - 1):
             total += dict(graph[path[i]]).get(path[i + 1], 1)
         return total
+    
+    @staticmethod
+    def converter_grafo_ponderado(graph: dict) -> tuple:
+        nos   = sorted(graph.keys())
+        grafo = [graph[n] for n in nos]  # ja e lista de (estado, custo)
+        return nos, grafo
