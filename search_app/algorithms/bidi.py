@@ -20,7 +20,7 @@ def search(start: str, goal: str, graph: dict,
     
    nos, grafo = Conversor.converter_grafo(graph)
 
-   caminho = buscaNP().bidirecional(start, goal, nos, grafo)
+   caminho = buscaNP().bidirecional_grafo(start, goal, nos, grafo)
 
    if caminho is None:
       return SearchResult
