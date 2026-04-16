@@ -22,7 +22,6 @@ from algorithms.greedy   import search as greedy_search
 from algorithms.astar    import search as astar_search
 from algorithms.ida_star import search as ida_star_search
 
-from algorithms._stub import search as _stub_search      # fallback para os demais
 
 # ── registro: nome do método → função ────────────────────────────────────────
 
@@ -51,6 +50,6 @@ def run_search(method: str, start: str, goal: str,
         start=start,
         goal=goal,
         graph=graph,
-        heuristic=heuristic,
+        heuristic=None,
         depth_limit=depth_limit,
     )

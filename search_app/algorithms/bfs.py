@@ -10,18 +10,6 @@ from search_result import SearchResult
 from algorithms.conversor import Conversor
 
 
-
-# ── funções de conversão/adaptação ───────────────────────────────────────────
-# Necessárias porque config.GRAPH usa formato diferente do esperado por buscaNP.
-#
-# config.GRAPH : {'A': [('B', 1), ('C', 4)], ...}
-#   buscaNP espera:
-#     nos   = ['A', 'B', 'C', ...]          (lista ordenada de estados)
-#     grafo = [[idx_viz, ...], [idx_viz, ...], ...]  (índices dos vizinhos)
-
-
-# ── função obrigatória chamada pelo REGISTRY ──────────────────────────────────
-
 def search(start: str, goal: str, graph: dict,
            heuristic: dict = None, depth_limit: int = None) -> SearchResult:
 

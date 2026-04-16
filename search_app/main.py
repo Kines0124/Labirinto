@@ -13,7 +13,7 @@ cada uma dessas responsabilidades vive no módulo correspondente.
 import tkinter as tk
 from tkinter import font
 
-from config import COLORS, GRAPH, HEURISTIC, NODE_POSITIONS, WINDOW
+from config import COLORS, GRAPH, WINDOW
 from algorithms import run_search
 from ui.graph_canvas import GraphCanvas
 from ui.control_panel import ControlPanel
@@ -122,7 +122,7 @@ class SearchApp(tk.Tk):
             start=start,
             goal=goal,
             graph=GRAPH,
-            heuristic=HEURISTIC,
+            heuristic=None,
             depth_limit=depth_limit,
         )
 
