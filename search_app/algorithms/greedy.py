@@ -12,13 +12,31 @@ Como ativar
 """
 
 from search_result import SearchResult
+from algorithms.BuscaP import buscaP
+from algorithms.conversor import Conversor
+from algorithms import Heuristica
 
 
 def search(start: str, goal: str, graph: dict,
            heuristic: dict = None, depth_limit: int = None) -> SearchResult:
-    """
-    heuristic : dict {estado: valor_h} — distância estimada ao objetivo.
-                Obrigatório para este algoritmo.
-    """
-    # ── TODO: implemente aqui ─────────────────────────────────────────────────
-    raise NotImplementedError('Greedy ainda não implementado.')
+    
+   nos, grafo = Conversor.converter_grafo_ponderado(graph)
+
+   buscador = buscaP()
+
+   buscador._heuristica = Heuristica.calcular_heuristica(goal, graph)
+
+   resultado = buscaP().greedy_grafo(start, goal, nos, grafo)
+
+   if resultado is None:
+      return SearchResult()
+
+   caminho, custo = resultado  
+   reverso = caminho[::-1]        # inverte a tupla
+
+   return SearchResult(
+        path=reverso,
+        cost=Conversor.calcular_custo(caminho, graph),
+        nodes_expanded=0,
+        depth=len(caminho) - 1,
+   )

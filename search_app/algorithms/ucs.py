@@ -27,10 +27,11 @@ def search(start: str, goal: str, graph: dict,
       return SearchResult()
    
    caminho, custo = resultado
+   reverso = caminho[::-1]        # inverte a tupla
 
    return SearchResult(
-      path=caminho,
-      cost = custo,
+      path=reverso,
+      cost = Conversor.calcular_custo(caminho, graph),
       nodes_expanded=0,
       depth=len(caminho) - 1,
    )

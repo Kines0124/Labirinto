@@ -12,15 +12,15 @@ from search_result import SearchResult
 
 # ── imports dos algoritmos ────────────────────────────────────────────────────
 
-from algorithms.bfs   import search as bfs_search        # ativo
+from algorithms.bfs      import search as bfs_search      
 from algorithms.dfs      import search as dfs_search
 from algorithms.dls      import search as dls_search
 from algorithms.iddfs    import search as iddfs_search
 from algorithms.bidi     import search as bidi_search
 from algorithms.ucs      import search as ucs_search
-# from algorithms.greedy   import search as greedy_search
-# from algorithms.astar    import search as astar_search
-# from algorithms.ida_star import search as ida_star_search
+from algorithms.greedy   import search as greedy_search
+from algorithms.astar    import search as astar_search
+from algorithms.ida_star import search as ida_star_search
 
 from algorithms._stub import search as _stub_search      # fallback para os demais
 
@@ -33,9 +33,9 @@ REGISTRY: dict[str, callable] = {
     'Aprofundamento Iterativo (IDDFS)': iddfs_search,   # TODO: trocar por iddfs_search
     'Bidirecional':                     bidi_search,   # TODO: trocar por bidi_search
     'Custo Uniforme (UCS)':             ucs_search,   # TODO: trocar por ucs_search
-    'Greedy Best-First':                _stub_search,   # TODO: trocar por greedy_search
-    'A* (A-estrela)':                   _stub_search,   # TODO: trocar por astar_search
-    'AIA* (A* Iterativo)':              _stub_search,   # TODO: trocar por ida_star_search
+    'Greedy Best-First':                greedy_search,   # TODO: trocar por greedy_search
+    'A* (A-estrela)':                   astar_search,   # TODO: trocar por astar_search
+    'AIA* (A* Iterativo)':              ida_star_search   # TODO: trocar por ida_star_search
 }
 
 
