@@ -13,7 +13,8 @@ cada uma dessas responsabilidades vive no módulo correspondente.
 import tkinter as tk
 from tkinter import font
 
-from config import COLORS, GRAPH, WINDOW
+import config
+from config import COLORS, WINDOW
 from algorithms import run_search
 from ui.graph_canvas import GraphCanvas
 from ui.control_panel import ControlPanel
@@ -65,6 +66,7 @@ class SearchApp(tk.Tk):
             body,
             on_search=self._handle_search,
             on_reset=self._handle_reset,
+            on_regenerate=self._handle_regenerate,
             fonts=self._fonts,
         )
         self.control.pack(side='left', fill='y', padx=(8, 4), pady=8)
@@ -77,7 +79,8 @@ class SearchApp(tk.Tk):
                  bg=COLORS['bg'], fg=COLORS['text_dim'],
                  anchor='w').pack(padx=4, pady=(4, 0))
 
-        self.graph_canvas = GraphCanvas(canvas_wrapper)
+        self.graph_canvas = GraphCanvas(canvas_wrapper,
+                                on_regenerate=self._handle_regenerate)
         self.graph_canvas.set_fonts(self._fonts)
         self.graph_canvas.pack(fill='both', expand=True)
 
@@ -121,7 +124,7 @@ class SearchApp(tk.Tk):
             method=method,
             start=start,
             goal=goal,
-            graph=GRAPH,
+            graph=config.GRAPH,
             heuristic=None,
             depth_limit=depth_limit,
         )
@@ -141,6 +144,13 @@ class SearchApp(tk.Tk):
         start = self.control.start_var.get()
         goal  = self.control.goal_var.get()
         self.graph_canvas.render(start=start, goal=goal)
+        self.result.clear()
+
+    def _handle_regenerate(self):
+        config.regenerate_maze()
+        self.control.start_var.set(config.STATES[0])
+        self.control.goal_var.set(config.STATES[-1])
+        self.graph_canvas.render()
         self.result.clear()
 
 

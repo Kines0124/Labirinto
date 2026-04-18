@@ -7,7 +7,8 @@ Não conhece algoritmos nem canvas — comunica-se com o app via callbacks.
 
 import tkinter as tk
 from tkinter import ttk
-from config import COLORS, STATES, SEARCH_METHODS
+import config
+from config import COLORS, SEARCH_METHODS
 
 
 class ControlPanel(tk.Frame):
@@ -20,7 +21,7 @@ class ControlPanel(tk.Frame):
     on_reset()                                  → None
     """
 
-    def __init__(self, parent, on_search, on_reset, fonts: dict, **kwargs):
+    def __init__(self, parent, on_search, on_reset, fonts: dict, on_regenerate = None, **kwargs):
         super().__init__(parent, bg=COLORS['panel'], width=230,
                          highlightbackground=COLORS['panel_border'],
                          highlightthickness=1, **kwargs)
@@ -29,6 +30,7 @@ class ControlPanel(tk.Frame):
         self._on_search = on_search
         self._on_reset  = on_reset
         self._fonts     = fonts
+        self._on_regenerate = on_regenerate
 
         self._build()
         self._apply_combobox_style()
@@ -67,17 +69,17 @@ class ControlPanel(tk.Frame):
         # ── estado inicial ──
         self._divider()
         self._section('▸ ESTADO INICIAL')
-        self.start_var = tk.StringVar(value=STATES[0])
+        self.start_var = tk.StringVar(value=config.STATES[0])
         ttk.Combobox(self, textvariable=self.start_var,
-                     values=STATES, state='readonly',
+                     values=config.STATES, state='readonly',
                      width=10, font=self._fonts['mono'],
                      ).pack(**pad, anchor='w')
 
         # ── estado objetivo ──
         self._section('▸ ESTADO OBJETIVO')
-        self.goal_var = tk.StringVar(value=STATES[-1])
+        self.goal_var = tk.StringVar(value=config.STATES[-1])
         ttk.Combobox(self, textvariable=self.goal_var,
-                     values=STATES, state='readonly',
+                     values=config.STATES, state='readonly',
                      width=10, font=self._fonts['mono'],
                      ).pack(**pad, anchor='w')
 
@@ -99,6 +101,16 @@ class ControlPanel(tk.Frame):
                   relief='flat', cursor='hand2',
                   command=self._on_reset, pady=6,
                   ).pack(padx=16, pady=(0, 4), fill='x')
+        
+        if self._on_regenerate:
+            tk.Button(self, text='⟳  NOVO LABIRINTO',
+                    font=self._fonts['section'],
+                    bg=COLORS['panel_border'], fg=COLORS['warning'],
+                    activebackground=COLORS['node_default'],
+                    activeforeground=COLORS['warning'],
+                    relief='flat', cursor='hand2',
+                    command=self._on_regenerate, pady=6,
+                    ).pack(padx=16, pady=(0, 4), fill='x')
 
         # ── legenda ──
         self._divider()
@@ -116,6 +128,20 @@ class ControlPanel(tk.Frame):
             tk.Label(row, text=label, font=self._fonts['label'],
                      fg=COLORS['text_dim'], bg=COLORS['panel'],
                      ).pack(side='left', padx=4)
+        self._section('▸ TERRENOS')
+        for clr, label in [
+            (COLORS['tile_free'], 'Planície  (peso 1)'),
+            (COLORS['tile_w2'],   'Floresta  (peso 2)'),
+            (COLORS['tile_w3'],   'Pântano   (peso 3)'),
+            (COLORS['tile_w5'],   'Montanha  (peso 5)'),
+        ]:
+            row = tk.Frame(self, bg=COLORS['panel'])
+            row.pack(anchor='w', padx=16, pady=1)
+            tk.Label(row, text='■', font=self._fonts['label'],
+                    fg=clr, bg=COLORS['panel']).pack(side='left')
+            tk.Label(row, text=label, font=self._fonts['label'],
+                    fg=COLORS['text_dim'], bg=COLORS['panel'],
+                    ).pack(side='left', padx=4)
 
     # ── eventos ─────────────────────────────────────────────────────────────
 
