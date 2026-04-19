@@ -40,8 +40,7 @@ def calcular_heuristica(goal, graph: dict) -> dict:
 
     return dist
 
-def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list) -> dict:
-
+def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list = None) -> dict:
     def parse_coord(s: str):
         s = s.strip("() ")
         x, y = s.split(",")
@@ -50,6 +49,6 @@ def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list) -> 
     gx, gy = parse_coord(goal)
 
     return {
-        no: abs(parse_coord(coordenadas[i])[0] - gx) + abs(parse_coord(coordenadas[i])[1] - gy)
-        for i, no in enumerate(graph)
+        no: abs(parse_coord(no)[0] - gx) + abs(parse_coord(no)[1] - gy)
+        for no in graph
     }

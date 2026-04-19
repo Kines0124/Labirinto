@@ -21,8 +21,8 @@ def search(start: str, goal: str, graph: dict,
            heuristic: dict = None, depth_limit: int = None) -> SearchResult:
     
    coordenadas = list(graph) 
-   pesos = heuristica.calcular_heuristica(goal,graph)
-   # pesos = heuristica.calcular_heuristica_manhattan(goal, graph, coordenadas)
+   #pesos = heuristica.calcular_heuristica(goal,graph)
+   pesos = heuristica.calcular_heuristica_manhattan(goal, graph, coordenadas)
 
    nos, grafo = Conversor.converter_grafo_ponderado(graph)
    resultado = buscaP().greedy_grafo(start, goal, nos, grafo, pesos)

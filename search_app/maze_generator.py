@@ -56,7 +56,7 @@ TERRAINS: list[TerrainType] = [
 assert abs(sum(t.probability for t in TERRAINS) - 1.0) < 1e-6, \
     "Probabilidades dos terrenos devem somar 1.0"
 
-EXTRA_EDGE_PROBABILITY: float = 0.35  # 0.0 = perfeito, 1.0 = remove todas as paredes
+EXTRA_EDGE_PROBABILITY: float = 0.45  # 0.0 = perfeito, 1.0 = remove todas as paredes
 
 def _sample_terrain(rng: random.Random) -> TerrainType:
     """Sorteia um terreno conforme as probabilidades configuradas."""
