@@ -152,7 +152,7 @@ def generate_kruskal_maze(
     seed: Optional[int] = None,
 ) -> MazeResult:
     """
-    Gera um labirinto perfeito usando o algoritmo de Kruskal randomizado.
+    Gera um labirinto usando o algoritmo de Kruskal randomizado.
 
     O labirinto lógico tem `rows × cols` células. Para representá-lo num grid
     bidimensional com paredes explícitas, usamos a expansão 2-para-1:

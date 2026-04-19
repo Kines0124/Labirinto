@@ -29,5 +29,5 @@ def search(start: str, goal: str, graph: dict,
       path=caminho,
       cost= Conversor.calcular_custo(caminho, graph),
       nodes_expanded=0,
-      depth=len(caminho) - 1,
+      depth=len(caminho) - 1
    )

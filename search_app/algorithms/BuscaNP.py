@@ -535,7 +535,7 @@ class buscaNP(object):
         visitado1[t_inicio] = 0
         visitado2 = {}
         visitado2[t_fim] = 0
-        print(visitado1,visitado2)
+        # print(visitado1,visitado2)
         
         nivel = 0
         while fila1 and fila2:

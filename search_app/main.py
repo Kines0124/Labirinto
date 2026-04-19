@@ -128,7 +128,7 @@ class SearchApp(tk.Tk):
             heuristic=None,
             depth_limit=depth_limit,
         )
-
+        
         self.graph_canvas.render(path=result.path, start=start, goal=goal)
         self.result.update_result(result)
 

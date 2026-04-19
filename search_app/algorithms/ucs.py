@@ -31,7 +31,7 @@ def search(start: str, goal: str, graph: dict,
 
    return SearchResult(
       path=reverso,
-      cost = Conversor.calcular_custo(caminho, graph),
+      cost=float(custo),
       nodes_expanded=0,
-      depth=len(caminho) - 1,
+      depth=len(caminho) - 1
    )

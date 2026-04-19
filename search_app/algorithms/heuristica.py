@@ -15,21 +15,7 @@ import heapq
 
 
 def calcular_heuristica(goal, graph: dict) -> dict:
-    """
-    Retorna {nó: custo_estimado_até_goal} para todos os nós do grafo.
 
-    Usa Dijkstra no grafo invertido a partir do objetivo, garantindo
-    que h(n) <= custo_real(n, goal) para todo n (admissibilidade).
-
-    Parâmetros
-    ----------
-    goal  : estado objetivo escolhido pelo usuário
-    graph : {estado: [(vizinho, custo), ...]}
-
-    Retorna
-    -------
-    dict — h(goal) == 0, nós inalcançáveis retornam inf
-    """
     # monta grafo invertido: aresta A->B vira B->A
     grafo_inv = {n: [] for n in graph}
     for origem, vizinhos in graph.items():
@@ -53,3 +39,17 @@ def calcular_heuristica(goal, graph: dict) -> dict:
                 heapq.heappush(heap, (novo_custo, vizinho))
 
     return dist
+
+def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list) -> dict:
+
+    def parse_coord(s: str):
+        s = s.strip("() ")
+        x, y = s.split(",")
+        return int(x), int(y)
+
+    gx, gy = parse_coord(goal)
+
+    return {
+        no: abs(parse_coord(coordenadas[i])[0] - gx) + abs(parse_coord(coordenadas[i])[1] - gy)
+        for i, no in enumerate(graph)
+    }
