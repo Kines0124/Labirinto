@@ -38,18 +38,25 @@ REGISTRY: dict[str, callable] = {
 }
 
 
+HEURISTIC_METHODS = {'Greedy Best-First', 'A* (A-estrela)', 'AIA* (A* Iterativo)'}
+
 def run_search(method: str, start: str, goal: str,
                graph: dict, heuristic: dict,
-               depth_limit: int = 3) -> SearchResult:
+               depth_limit: int = 3,
+               heuristic_name: str = 'manhattan') -> SearchResult:
     fn = REGISTRY.get(method)
     if fn is None:
         print(f'[AVISO] Método "{method}" não encontrado no registro.')
         return SearchResult()
 
-    return fn(
+    kwargs = dict(
         start=start,
         goal=goal,
         graph=graph,
         heuristic=None,
         depth_limit=depth_limit,
     )
+    if method in HEURISTIC_METHODS:
+        kwargs['heuristic_name'] = heuristic_name
+
+    return fn(**kwargs)

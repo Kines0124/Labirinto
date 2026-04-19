@@ -40,6 +40,14 @@ def calcular_heuristica(goal, graph: dict) -> dict:
 
     return dist
 
+def calcular_heuristica_por_nome(nome: str, goal: str, graph: dict) -> dict:
+    """Seleciona e retorna a heurística pelo nome ('manhattan' ou 'dijkstra')."""
+    coordenadas = list(graph)
+    if nome == 'dijkstra':
+        return calcular_heuristica(goal, graph)
+    return calcular_heuristica_manhattan(goal, graph, coordenadas)
+
+
 def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list = None) -> dict:
     def parse_coord(s: str):
         s = s.strip("() ")

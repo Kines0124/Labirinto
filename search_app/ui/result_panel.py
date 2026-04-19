@@ -50,7 +50,6 @@ class ResultPanel(tk.Frame):
         # ── estatísticas ──
         stats = tk.Frame(self, bg=COLORS['panel'])
         stats.pack(padx=14, fill='x')
-        self._nodes_lbl = self._stat_box(stats, 'NODOS\nEXPANDIDOS')
         self._depth_lbl = self._stat_box(stats, 'PROF.\nSOLUÇÃO')
 
         # ── caminho ──
@@ -92,14 +91,12 @@ class ResultPanel(tk.Frame):
         """Atualiza todos os widgets com os dados do SearchResult."""
         path     = result.path
         cost     = result.cost
-        expanded = result.nodes_expanded
         depth    = result.depth
 
         self._cost_lbl.config(
             text=str(cost) if result.found else '∞',
             fg=COLORS['warning'] if result.found else COLORS['danger'],
         )
-        self._nodes_lbl.config(text=str(expanded))
         self._depth_lbl.config(text=str(depth))
 
         self._path_text.config(state='normal')
@@ -107,7 +104,6 @@ class ResultPanel(tk.Frame):
         if result.found:
             self._path_text.insert('end', ' → '.join(path) + '\n\n')
             self._path_text.insert('end', f'Custo total: {cost}\n')
-            self._path_text.insert('end', f'Nós expandidos: {expanded}\n')
             self._path_text.insert('end', f'Profundidade: {depth}\n')
         else:
             self._path_text.insert('end', 'Nenhum caminho encontrado.')
@@ -116,7 +112,6 @@ class ResultPanel(tk.Frame):
     def clear(self):
         """Restaura o painel ao estado inicial."""
         self._cost_lbl.config(text='—', fg=COLORS['warning'])
-        self._nodes_lbl.config(text='—')
         self._depth_lbl.config(text='—')
         self._path_text.config(state='normal')
         self._path_text.delete('1.0', 'end')

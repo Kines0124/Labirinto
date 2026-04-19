@@ -10,6 +10,9 @@ from tkinter import ttk
 import config
 from config import COLORS, SEARCH_METHODS
 
+HEURISTIC_METHODS = {'Greedy Best-First', 'A* (A-estrela)', 'AIA* (A* Iterativo)'}
+HEURISTIC_OPTIONS = ['Manhattan', 'Dijkstra (apelação)']
+
 
 class ControlPanel(tk.Frame):
     """
@@ -65,6 +68,19 @@ class ControlPanel(tk.Frame):
                    relief='flat', insertbackground=COLORS['text'],
                    ).pack(anchor='w')
         self._depth_frame.pack_forget()
+
+        # ── heurística (visível só para Greedy, A*, IDA*) ──
+        self._heuristic_frame = tk.Frame(self, bg=COLORS['panel'])
+        self._heuristic_frame.pack(**pad, fill='x')
+        tk.Label(self._heuristic_frame, text='Heurística:',
+                 font=self._fonts['section'], bg=COLORS['panel'],
+                 fg=COLORS['text_dim']).pack(anchor='w')
+        self.heuristic_var = tk.StringVar(value=HEURISTIC_OPTIONS[0])
+        ttk.Combobox(self._heuristic_frame, textvariable=self.heuristic_var,
+                     values=HEURISTIC_OPTIONS, state='readonly',
+                     width=20, font=self._fonts['mono'],
+                     ).pack(anchor='w')
+        self._heuristic_frame.pack_forget()
 
         # ── estado inicial ──
         self._divider()
@@ -146,11 +162,13 @@ class ControlPanel(tk.Frame):
     # ── eventos ─────────────────────────────────────────────────────────────
 
     def _fire_search(self):
+        heuristic_name = 'dijkstra' if self.heuristic_var.get() == 'Dijkstra (apelação)' else 'manhattan'
         self._on_search(
             method=self.method_var.get(),
             start=self.start_var.get(),
             goal=self.goal_var.get(),
             depth_limit=self.depth_var.get(),
+            heuristic_name=heuristic_name,
         )
 
     def _on_method_change(self, _event=None):
@@ -168,6 +186,11 @@ class ControlPanel(tk.Frame):
 
         else:
             self._depth_frame.pack_forget()
+
+        if method in HEURISTIC_METHODS:
+            self._heuristic_frame.pack(padx=16, pady=4, fill='x')
+        else:
+            self._heuristic_frame.pack_forget()
 
     # ── helpers ──────────────────────────────────────────────────────────────
 

@@ -111,7 +111,8 @@ class SearchApp(tk.Tk):
     # ── callbacks ────────────────────────────────────────────────────────────
 
     def _handle_search(self, method: str, start: str,
-                       goal: str, depth_limit: int):
+                       goal: str, depth_limit: int,
+                       heuristic_name: str = 'manhattan'):
         if start == goal:
             self.result.set_status('⚠ Estado inicial = objetivo.',
                                    COLORS['warning'])
@@ -127,6 +128,7 @@ class SearchApp(tk.Tk):
             graph=config.GRAPH,
             heuristic=None,
             depth_limit=depth_limit,
+            heuristic_name=heuristic_name,
         )
         
         self.graph_canvas.render(path=result.path, start=start, goal=goal)
