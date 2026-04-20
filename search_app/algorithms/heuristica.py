@@ -14,7 +14,7 @@ perfeitamente admissível (nunca superestima).
 import heapq
 
 
-def calcular_heuristica(goal, graph: dict) -> dict:
+def calcular_heuristica_dijkstra(goal, graph: dict) -> dict:
 
     # monta grafo invertido: aresta A->B vira B->A
     grafo_inv = {n: [] for n in graph}
@@ -44,7 +44,7 @@ def calcular_heuristica_por_nome(nome: str, goal: str, graph: dict) -> dict:
     """Seleciona e retorna a heurística pelo nome ('manhattan' ou 'dijkstra')."""
     coordenadas = list(graph)
     if nome == 'dijkstra':
-        return calcular_heuristica(goal, graph)
+        return calcular_heuristica_dijkstra(goal, graph)
     return calcular_heuristica_manhattan(goal, graph, coordenadas)
 
 

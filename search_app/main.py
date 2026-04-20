@@ -67,6 +67,8 @@ class SearchApp(tk.Tk):
             on_search=self._handle_search,
             on_reset=self._handle_reset,
             on_regenerate=self._handle_regenerate,
+            on_clear_path=lambda: self.graph_canvas.clear_path(),
+            on_clear_result=lambda: self.result.clear(),          
             fonts=self._fonts,
         )
         self.control.pack(side='left', fill='y', padx=(8, 4), pady=8)

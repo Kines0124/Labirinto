@@ -32,6 +32,16 @@ _TERRAIN_COLOR: dict[str, str] = {
 
 
 class GraphCanvas(tk.Canvas):
+    """
+    Canvas que renderiza o mapa como um grid de tiles.
+
+    Uso
+    ---
+    canvas = GraphCanvas(parent)
+    canvas.pack(fill='both', expand=True)
+    canvas.render(path=['(0,0)', '(0,1)', ...], start='(0,0)', goal='(14,14)')
+    canvas.render()   # limpa destaque
+    """
 
     _MIN_CELL = 20
     _MAX_CELL = 48
@@ -46,6 +56,8 @@ class GraphCanvas(tk.Canvas):
         # self._tile_imgs: dict[str, ImageTk.PhotoImage] = {}  # ← adiciona
         # self.bind('<Configure>', lambda _e: self._reload_tiles() or self.render())  # ← troca
         
+    def clear_path(self):
+        self.render(path=[])
 
     def set_fonts(self, fonts: dict):
         self._fonts = fonts

@@ -84,13 +84,10 @@ class buscaP(object):
         #caminho.reverse()
         return caminho
 #--------------------------------------------------------------------------    
-# GERA H DE FORMA ALEATÓRIA - GRAFO
+# GERA H - GRAFO
 #--------------------------------------------------------------------------    
-    def heuristica_grafo(self, nos, n, destino) -> float:
-        if hasattr(self, '_heuristica') and self._heuristica:
-            return self._heuristica.get(n, float('inf'))
-        # Fallback: sem heurística injetada, comporta-se como Dijkstra
-        return 0.0
+    def heuristica_grafo(self, nos, inicio, destino) -> float:
+        return
 #--------------------------------------------------------------------------    
 # GERA H - GRID
 #--------------------------------------------------------------------------    
@@ -415,7 +412,7 @@ class buscaP(object):
         if inicio == fim:
             return [inicio], 0
         
-        lim = self.heuristica_grafo(nos,inicio,fim)
+        lim = pesos[inicio]
         
         while True:
             # Fila de prioridade baseada em deque + inserção ordenada
