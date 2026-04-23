@@ -68,7 +68,9 @@ class SearchApp(tk.Tk):
             on_reset=self._handle_reset,
             on_regenerate=self._handle_regenerate,
             on_clear_path=lambda: self.graph_canvas.clear_path(),
-            on_clear_result=lambda: self.result.clear(),          
+            on_clear_result=lambda: self.result.clear(),
+            on_pick_start=lambda: self.graph_canvas.set_pick_mode('start'),
+            on_pick_goal=lambda: self.graph_canvas.set_pick_mode('goal'),
             fonts=self._fonts,
         )
         self.control.pack(side='left', fill='y', padx=(8, 4), pady=8)
@@ -82,7 +84,8 @@ class SearchApp(tk.Tk):
                  anchor='w').pack(padx=4, pady=(4, 0))
 
         self.graph_canvas = GraphCanvas(canvas_wrapper,
-                                on_regenerate=self._handle_regenerate)
+                                on_regenerate=self._handle_regenerate,
+                                on_node_picked=self._handle_node_picked)
         self.graph_canvas.set_fonts(self._fonts)
         self.graph_canvas.pack(fill='both', expand=True)
 
@@ -143,6 +146,21 @@ class SearchApp(tk.Tk):
         else:
             self.result.set_status('✗ Sem caminho encontrado.',
                                    COLORS['danger'])
+
+    def _handle_node_picked(self, role: str, node: str):
+        """Recebe o nó clicado no canvas e atualiza o combobox correspondente."""
+        self.control.set_pick_active(None)  # apaga destaque do botão
+        if role == 'start':
+            self.control.start_var.set(node)
+            config.START_NODE = node
+        else:
+            self.control.goal_var.set(node)
+            config.GOAL_NODE = node
+        self.graph_canvas.clear_path()
+        self.result.clear()
+        start = self.control.start_var.get()
+        goal  = self.control.goal_var.get()
+        self.graph_canvas.render(start=start, goal=goal)
 
     def _handle_reset(self):
         start = self.control.start_var.get()

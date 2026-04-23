@@ -25,19 +25,23 @@ class ControlPanel(tk.Frame):
     """
 
     def __init__(self, parent, on_search, on_reset, fonts: dict, 
-                 on_regenerate = None, on_clear_path = None, on_clear_result=None, **kwargs):
+                 on_regenerate=None, on_clear_path=None, on_clear_result=None,
+                 on_pick_start=None, on_pick_goal=None, **kwargs):
         
         super().__init__(parent, bg=COLORS['panel'], width=230,
                          highlightbackground=COLORS['panel_border'],
                          highlightthickness=1, **kwargs)
         self.pack_propagate(False)
 
-        self._on_search = on_search
-        self._on_reset  = on_reset
-        self._fonts     = fonts
-        self._on_regenerate = on_regenerate
-        self._on_clear_path = on_clear_path
+        self._on_search       = on_search
+        self._on_reset        = on_reset
+        self._fonts           = fonts
+        self._on_regenerate   = on_regenerate
+        self._on_clear_path   = on_clear_path
         self._on_clear_result = on_clear_result
+        self._on_pick_start   = on_pick_start
+        self._on_pick_goal    = on_pick_goal
+        self._pick_btns: dict[str, tk.Button] = {}
 
         self._build()
         self._apply_combobox_style()
@@ -91,23 +95,47 @@ class ControlPanel(tk.Frame):
         # ── estado inicial ──
         self._divider()
         self._section('▸ ESTADO INICIAL')
+        start_row = tk.Frame(self, bg=COLORS['panel'])
+        start_row.pack(padx=16, pady=(0, 4), fill='x')
         self.start_var = tk.StringVar(value=config.STATES[0])
         self.start_var.trace_add('write', self._on_state_change)
-        start_cb = ttk.Combobox(self, textvariable=self.start_var,
+        start_cb = ttk.Combobox(start_row, textvariable=self.start_var,
                                 values=config.STATES, state='readonly',
                                 width=10, font=self._fonts['mono'])
         start_cb.bind('<<ComboboxSelected>>', self._clear)
-        start_cb.pack(**pad, anchor='w')
+        start_cb.pack(side='left')
+        pick_start_btn = tk.Button(
+            start_row, text='📍',
+            font=self._fonts['mono'],
+            bg=COLORS['node_default'], fg=COLORS['accent'],
+            activebackground=COLORS['accent'], activeforeground='#ffffff',
+            relief='flat', cursor='hand2', padx=6,
+            command=self._fire_pick_start,
+        )
+        pick_start_btn.pack(side='left', padx=(6, 0))
+        self._pick_btns['start'] = pick_start_btn
 
         # ── estado objetivo ──
         self._section('▸ ESTADO OBJETIVO')
+        goal_row = tk.Frame(self, bg=COLORS['panel'])
+        goal_row.pack(padx=16, pady=(0, 4), fill='x')
         self.goal_var = tk.StringVar(value=config.STATES[-1])
         self.goal_var.trace_add('write', self._on_state_change)
-        goal_cb = ttk.Combobox(self, textvariable=self.goal_var,
+        goal_cb = ttk.Combobox(goal_row, textvariable=self.goal_var,
                                values=config.STATES, state='readonly',
                                width=10, font=self._fonts['mono'])
         goal_cb.bind('<<ComboboxSelected>>', self._clear)
-        goal_cb.pack(**pad, anchor='w')
+        goal_cb.pack(side='left')
+        pick_goal_btn = tk.Button(
+            goal_row, text='🎯',
+            font=self._fonts['mono'],
+            bg=COLORS['node_default'], fg=COLORS['success'],
+            activebackground=COLORS['success'], activeforeground='#ffffff',
+            relief='flat', cursor='hand2', padx=6,
+            command=self._fire_pick_goal,
+        )
+        pick_goal_btn.pack(side='left', padx=(6, 0))
+        self._pick_btns['goal'] = pick_goal_btn
 
         # ── botões ──
         self._divider()
@@ -170,6 +198,33 @@ class ControlPanel(tk.Frame):
                     ).pack(side='left', padx=4)
 
     # ── eventos ─────────────────────────────────────────────────────────────
+
+    def _fire_pick_start(self):
+        self.set_pick_active('start')
+        if self._on_pick_start:
+            self._on_pick_start()
+
+    def _fire_pick_goal(self):
+        self.set_pick_active('goal')
+        if self._on_pick_goal:
+            self._on_pick_goal()
+
+    def set_pick_active(self, role: str | None):
+        """Destaca o botão de pick ativo e apaga o outro."""
+        styles = {
+            'start': (COLORS['accent'],   '#ffffff'),
+            'goal':  (COLORS['success'],  '#ffffff'),
+        }
+        defaults = {
+            'start': (COLORS['node_default'], COLORS['accent']),
+            'goal':  (COLORS['node_default'], COLORS['success']),
+        }
+        for key, btn in self._pick_btns.items():
+            if key == role:
+                bg, fg = styles[key]
+            else:
+                bg, fg = defaults[key]
+            btn.config(bg=bg, fg=fg)
 
     def _fire_search(self):
         heuristic_name = 'dijkstra' if self.heuristic_var.get() == 'Dijkstra (apelação)' else 'manhattan'

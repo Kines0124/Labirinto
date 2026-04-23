@@ -46,18 +46,61 @@ class GraphCanvas(tk.Canvas):
     _MIN_CELL = 20
     _MAX_CELL = 48
 
-    def __init__(self, parent, on_regenerate=None, **kwargs):
+    def __init__(self, parent, on_regenerate=None, on_node_picked=None, **kwargs):
         super().__init__(parent, bg=COLORS['bg'],
                          highlightthickness=0, **kwargs)
         self._fonts: dict = {}
         self._on_regenerate = on_regenerate
-        self.bind('<Configure>', lambda _e: self.render()) # remover depois 
+        self._on_node_picked = on_node_picked   # callback(role, node)
+        self._pick_mode: str | None = None       # 'start' | 'goal' | None
+        self.bind('<Configure>', lambda _e: self.render())
+        self.bind('<Button-1>', self._on_canvas_click)
         # SUBSTITUIR POR ISSO DEPOIS
         # self._tile_imgs: dict[str, ImageTk.PhotoImage] = {}  # ← adiciona
         # self.bind('<Configure>', lambda _e: self._reload_tiles() or self.render())  # ← troca
         
     def clear_path(self):
         self.render(path=[])
+
+    def set_pick_mode(self, mode: str | None):
+        """Ativa ('start'/'goal') ou desativa (None) o modo de seleção por clique."""
+        self._pick_mode = mode
+        if mode == 'start':
+            self.config(cursor='crosshair')
+        elif mode == 'goal':
+            self.config(cursor='crosshair')
+        else:
+            self.config(cursor='')
+
+    def _on_canvas_click(self, event):
+        if not self._pick_mode:
+            return
+
+        grid_map  = config.GRID_MAP
+        grid_rows = config.GRID_ROWS
+        grid_cols = config.GRID_COLS
+
+        cw = self.winfo_width()  or 600
+        ch = self.winfo_height() or 480
+        cell = self._cell_size(cw, ch, grid_rows, grid_cols)
+        ox, oy = self._origin(cw, ch, cell, grid_rows, grid_cols)
+
+        c = (event.x - ox) // cell
+        r = (event.y - oy) // cell
+
+        if not (0 <= r < grid_rows and 0 <= c < grid_cols):
+            return
+        if grid_map[r][c] == 1:          # parede — ignora
+            return
+
+        node = f"({r},{c})"
+        role = self._pick_mode
+        self.set_pick_mode(None)         # desativa após a seleção
+
+        if self._on_node_picked:
+            self._on_node_picked(role, node)
+
+
 
     def set_fonts(self, fonts: dict):
         self._fonts = fonts
