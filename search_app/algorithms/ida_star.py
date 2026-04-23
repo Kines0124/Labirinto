@@ -14,20 +14,17 @@ Como ativar
 from search_result import SearchResult
 from algorithms.BuscaP import buscaP
 from algorithms.conversor import Conversor
-from algorithms import Heuristica
+import algorithms.heuristica as heuristica
 
 
 def search(start: str, goal: str, graph: dict,
-           heuristic: dict = None, depth_limit: int = None) -> SearchResult:
+           heuristic: dict = None, depth_limit: int = None,
+           heuristic_name: str = 'manhattan') -> SearchResult:
    
+   pesos = heuristica.calcular_heuristica_por_nome(heuristic_name, goal, graph)
+
    nos, grafo = Conversor.converter_grafo_ponderado(graph)
-
-   buscador = buscaP()
-
-   buscador._heuristica = Heuristica.calcular_heuristica(goal, graph)
-
-
-   resultado = buscaP().aia_estrela_grafo(start, goal, nos, grafo)
+   resultado = buscaP().aia_estrela_grafo(start, goal, nos, grafo, pesos)
 
    if resultado is None:
       return SearchResult()
@@ -37,7 +34,7 @@ def search(start: str, goal: str, graph: dict,
 
    return SearchResult(
         path=reverso,
-        cost=Conversor.calcular_custo(caminho, graph),
+        cost=float(custo),
         nodes_expanded=0,
-        depth=len(caminho) - 1,
+        depth=len(caminho) - 1
    )

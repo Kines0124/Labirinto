@@ -7,7 +7,11 @@ Não conhece algoritmos nem canvas — comunica-se com o app via callbacks.
 
 import tkinter as tk
 from tkinter import ttk
-from config import COLORS, STATES, SEARCH_METHODS
+import config
+from config import COLORS, SEARCH_METHODS
+
+HEURISTIC_METHODS = {'Greedy Best-First', 'A* (A-estrela)', 'AIA* (A* Iterativo)'}
+HEURISTIC_OPTIONS = ['Manhattan', 'Dijkstra (apelação)']
 
 
 class ControlPanel(tk.Frame):
@@ -20,7 +24,9 @@ class ControlPanel(tk.Frame):
     on_reset()                                  → None
     """
 
-    def __init__(self, parent, on_search, on_reset, fonts: dict, **kwargs):
+    def __init__(self, parent, on_search, on_reset, fonts: dict, 
+                 on_regenerate = None, on_clear_path = None, on_clear_result=None, **kwargs):
+        
         super().__init__(parent, bg=COLORS['panel'], width=230,
                          highlightbackground=COLORS['panel_border'],
                          highlightthickness=1, **kwargs)
@@ -29,6 +35,9 @@ class ControlPanel(tk.Frame):
         self._on_search = on_search
         self._on_reset  = on_reset
         self._fonts     = fonts
+        self._on_regenerate = on_regenerate
+        self._on_clear_path = on_clear_path
+        self._on_clear_result = on_clear_result
 
         self._build()
         self._apply_combobox_style()
@@ -47,16 +56,17 @@ class ControlPanel(tk.Frame):
         method_cb.pack(**pad, fill='x')
         method_cb.bind('<<ComboboxSelected>>', self._on_method_change)
 
-        # ── limite de profundidade (visível só para DLS) ──
+        # ── limite de profundidade (visível só para DLS e IDDFS) ──
         self._depth_frame = tk.Frame(self, bg=COLORS['panel'])
         self._depth_frame.pack(**pad, fill='x')
         self._depth_label = tk.Label(self._depth_frame, text='Limite de Profundidade:',
                    font=self._fonts['section'], bg=COLORS['panel'],
                    fg=COLORS['text_dim'])
         self._depth_label.pack(anchor='w')
-        self.depth_var = tk.IntVar(value=3)
-        tk.Spinbox(self._depth_frame, from_=1, to=20,
+        self.depth_var = tk.IntVar(value=30)
+        tk.Spinbox(self._depth_frame, from_=1, to=50,
                    textvariable=self.depth_var, width=6,
+                   command=self._clear,
                    font=self._fonts['mono'],
                    bg=COLORS['node_default'], fg=COLORS['text'],
                    buttonbackground=COLORS['panel_border'],
@@ -64,22 +74,40 @@ class ControlPanel(tk.Frame):
                    ).pack(anchor='w')
         self._depth_frame.pack_forget()
 
+        # ── heurística (visível só para Greedy, A*, IDA*) ──
+        self._heuristic_frame = tk.Frame(self, bg=COLORS['panel'])
+        self._heuristic_frame.pack(**pad, fill='x')
+        tk.Label(self._heuristic_frame, text='Heurística:',
+                 font=self._fonts['section'], bg=COLORS['panel'],
+                 fg=COLORS['text_dim']).pack(anchor='w')
+        self.heuristic_var = tk.StringVar(value=HEURISTIC_OPTIONS[0])
+        heuristic_cb = ttk.Combobox(self._heuristic_frame, textvariable=self.heuristic_var,
+                                    values=HEURISTIC_OPTIONS, state='readonly',
+                                    width=20, font=self._fonts['mono'])
+        heuristic_cb.pack(anchor='w')
+        heuristic_cb.bind('<<ComboboxSelected>>', self._clear)
+        self._heuristic_frame.pack_forget()
+
         # ── estado inicial ──
         self._divider()
         self._section('▸ ESTADO INICIAL')
-        self.start_var = tk.StringVar(value=STATES[0])
-        ttk.Combobox(self, textvariable=self.start_var,
-                     values=STATES, state='readonly',
-                     width=10, font=self._fonts['mono'],
-                     ).pack(**pad, anchor='w')
+        self.start_var = tk.StringVar(value=config.STATES[0])
+        self.start_var.trace_add('write', self._on_state_change)
+        start_cb = ttk.Combobox(self, textvariable=self.start_var,
+                                values=config.STATES, state='readonly',
+                                width=10, font=self._fonts['mono'])
+        start_cb.bind('<<ComboboxSelected>>', self._clear)
+        start_cb.pack(**pad, anchor='w')
 
         # ── estado objetivo ──
         self._section('▸ ESTADO OBJETIVO')
-        self.goal_var = tk.StringVar(value=STATES[-1])
-        ttk.Combobox(self, textvariable=self.goal_var,
-                     values=STATES, state='readonly',
-                     width=10, font=self._fonts['mono'],
-                     ).pack(**pad, anchor='w')
+        self.goal_var = tk.StringVar(value=config.STATES[-1])
+        self.goal_var.trace_add('write', self._on_state_change)
+        goal_cb = ttk.Combobox(self, textvariable=self.goal_var,
+                               values=config.STATES, state='readonly',
+                               width=10, font=self._fonts['mono'])
+        goal_cb.bind('<<ComboboxSelected>>', self._clear)
+        goal_cb.pack(**pad, anchor='w')
 
         # ── botões ──
         self._divider()
@@ -99,6 +127,16 @@ class ControlPanel(tk.Frame):
                   relief='flat', cursor='hand2',
                   command=self._on_reset, pady=6,
                   ).pack(padx=16, pady=(0, 4), fill='x')
+        
+        if self._on_regenerate:
+            tk.Button(self, text='⟳  NOVO LABIRINTO',
+                    font=self._fonts['section'],
+                    bg=COLORS['panel_border'], fg=COLORS['warning'],
+                    activebackground=COLORS['node_default'],
+                    activeforeground=COLORS['warning'],
+                    relief='flat', cursor='hand2',
+                    command=self._on_regenerate, pady=6,
+                    ).pack(padx=16, pady=(0, 4), fill='x')
 
         # ── legenda ──
         self._divider()
@@ -116,32 +154,59 @@ class ControlPanel(tk.Frame):
             tk.Label(row, text=label, font=self._fonts['label'],
                      fg=COLORS['text_dim'], bg=COLORS['panel'],
                      ).pack(side='left', padx=4)
+        self._section('▸ TERRENOS')
+        for clr, label in [
+            (COLORS['tile_free'], 'Planície  (peso 1)'),
+            (COLORS['tile_w2'],   'Floresta  (peso 2)'),
+            (COLORS['tile_w3'],   'Pântano   (peso 3)'),
+            (COLORS['tile_w5'],   'Montanha  (peso 5)'),
+        ]:
+            row = tk.Frame(self, bg=COLORS['panel'])
+            row.pack(anchor='w', padx=16, pady=1)
+            tk.Label(row, text='■', font=self._fonts['label'],
+                    fg=clr, bg=COLORS['panel']).pack(side='left')
+            tk.Label(row, text=label, font=self._fonts['label'],
+                    fg=COLORS['text_dim'], bg=COLORS['panel'],
+                    ).pack(side='left', padx=4)
 
     # ── eventos ─────────────────────────────────────────────────────────────
 
     def _fire_search(self):
+        heuristic_name = 'dijkstra' if self.heuristic_var.get() == 'Dijkstra (apelação)' else 'manhattan'
         self._on_search(
             method=self.method_var.get(),
             start=self.start_var.get(),
             goal=self.goal_var.get(),
             depth_limit=self.depth_var.get(),
+            heuristic_name=heuristic_name,
         )
 
+    def _on_state_change(self, *_):
+        config.START_NODE = self.start_var.get()
+        config.GOAL_NODE  = self.goal_var.get()
+        self._clear()
+
     def _on_method_change(self, _event=None):
+        self._clear()
         method = self.method_var.get()
 
         if method == 'Profundidade Limitada':
             self._depth_label.config(text='Limite de Profundidade:')
-            self.depth_var.set(3)
+            self.depth_var.set(30)
             self._depth_frame.pack(padx=16, pady=4, fill='x')
 
         elif method == 'Aprofundamento Iterativo (IDDFS)':
             self._depth_label.config(text='Profundidade Máxima:')
-            self.depth_var.set(20)
+            self.depth_var.set(30)
             self._depth_frame.pack(padx=16, pady=4, fill='x')
 
         else:
             self._depth_frame.pack_forget()
+
+        if method in HEURISTIC_METHODS:
+            self._heuristic_frame.pack(padx=16, pady=4, fill='x')
+        else:
+            self._heuristic_frame.pack_forget()
 
     # ── helpers ──────────────────────────────────────────────────────────────
 
@@ -153,6 +218,12 @@ class ControlPanel(tk.Frame):
     def _divider(self):
         tk.Frame(self, bg=COLORS['panel_border'], height=1).pack(
             fill='x', padx=12, pady=6)
+        
+    def _clear(self, _event=None):
+        if self._on_clear_path:
+            self._on_clear_path()
+        if self._on_clear_result:        
+            self._on_clear_result()
 
     @staticmethod
     def _apply_combobox_style():
