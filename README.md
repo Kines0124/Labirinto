@@ -1,4 +1,4 @@
-# 🧩 Tree Search Visualizer — Labirinto
+# Labirinto
 
 Visualizador interativo de algoritmos de busca em inteligência artificial, desenvolvido como projeto acadêmico. O labirinto é gerado proceduralmente a cada execução e percorrido pelos algoritmos implementados, permitindo comparar visualmente as estratégias de busca em termos de custo e profundidade da solução.
 
