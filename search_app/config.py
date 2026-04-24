@@ -178,7 +178,7 @@ COLORS: dict[str, str] = {
 }
 
 WINDOW = {
-    'title':      'Busca em Grade — Visualizador',
+    'title':      'Visualizador interativo de algoritmos de busca — Labirinto',
     'width':      1100,
     'height':     700,
     'min_width':  900,
