@@ -1,8 +1,14 @@
 """
-ui/control_panel.py
-===================
-Painel esquerdo da interface: seleção de método, estados e botões de ação.
-Não conhece algoritmos nem canvas — comunica-se com o app via callbacks.
+ui/control_panel.py  —  MERGED (testes-procedural × modificacoes)
+==================================================================
+Painel esquerdo da interface: seleção de método, estados e botões.
+
+Integração realizada:
+  - Checkbox de animação do caminho   (branch testes-procedural)
+  - Seção de Multiverso com spinner   (branch modificacoes)
+  - Legenda atualizada com portal     (ambas as branches)
+  - refresh_states() para atualizar comboboxes após troca de mapa
+  - set_pick_active() para destacar botão de pick ativo
 """
 
 import tkinter as tk
@@ -22,24 +28,20 @@ class ControlPanel(tk.Frame):
     ---------------------------------------
     on_search(method, start, goal, depth_limit, heuristic_name) → None
     on_reset()                                                   → None
-    on_regenerate()          → regera mapa único
-    on_clear_path()          → limpa caminho no canvas
-    on_clear_result()        → limpa painel de resultado
-    on_pick_start()          → ativa modo de seleção de início
-    on_pick_goal()           → ativa modo de seleção de objetivo
-    on_regenerate_multiverse(n_maps, portal_cost) → gera multiverso
+    on_regenerate()                                              → None
+    on_clear_path()                                              → None
+    on_clear_result()                                            → None
+    on_pick_start()                                              → None
+    on_pick_goal()                                               → None
+    on_regenerate_multiverse(n_maps, portal_cost)                → None  ← novo
     """
 
     def __init__(self, parent, on_search, on_reset, fonts: dict,
-                 on_regenerate=None,
-                 on_clear_path=None,
-                 on_clear_result=None,
-                 on_pick_start=None,
-                 on_pick_goal=None,
-                 on_regenerate_multiverse=None,
-                 **kwargs):
+                 on_regenerate=None, on_clear_path=None, on_clear_result=None,
+                 on_pick_start=None, on_pick_goal=None,
+                 on_regenerate_multiverse=None, **kwargs):
 
-        super().__init__(parent, bg=COLORS['panel'], width=230,
+        super().__init__(parent, bg=COLORS['panel'], width=240,
                          highlightbackground=COLORS['panel_border'],
                          highlightthickness=1, **kwargs)
         self.pack_propagate(False)
@@ -58,7 +60,7 @@ class ControlPanel(tk.Frame):
         self._build()
         self._apply_combobox_style()
 
-    # ── construção ──────────────────────────────────────────────────────────
+    # ── construção ───────────────────────────────────────────────────────────
 
     def _build(self):
         pad = {'padx': 16, 'pady': 4}
@@ -72,13 +74,14 @@ class ControlPanel(tk.Frame):
         method_cb.pack(**pad, fill='x')
         method_cb.bind('<<ComboboxSelected>>', self._on_method_change)
 
-        # ── limite de profundidade ───────────────────────────────────────────
+        # limite de profundidade
         self._depth_frame = tk.Frame(self, bg=COLORS['panel'])
         self._depth_frame.pack(**pad, fill='x')
         self._depth_label = tk.Label(self._depth_frame,
                                      text='Limite de Profundidade:',
                                      font=self._fonts['section'],
-                                     bg=COLORS['panel'], fg=COLORS['text_dim'])
+                                     bg=COLORS['panel'],
+                                     fg=COLORS['text_dim'])
         self._depth_label.pack(anchor='w')
         self.depth_var = tk.IntVar(value=30)
         tk.Spinbox(self._depth_frame, from_=1, to=50,
@@ -91,7 +94,7 @@ class ControlPanel(tk.Frame):
                    ).pack(anchor='w')
         self._depth_frame.pack_forget()
 
-        # ── heurística ───────────────────────────────────────────────────────
+        # heurística
         self._heuristic_frame = tk.Frame(self, bg=COLORS['panel'])
         self._heuristic_frame.pack(**pad, fill='x')
         tk.Label(self._heuristic_frame, text='Heurística:',
@@ -100,59 +103,59 @@ class ControlPanel(tk.Frame):
         self.heuristic_var = tk.StringVar(value=HEURISTIC_OPTIONS[0])
         heuristic_cb = ttk.Combobox(self._heuristic_frame,
                                     textvariable=self.heuristic_var,
-                                    values=HEURISTIC_OPTIONS, state='readonly',
+                                    values=HEURISTIC_OPTIONS,
+                                    state='readonly',
                                     width=20, font=self._fonts['mono'])
         heuristic_cb.pack(anchor='w')
         heuristic_cb.bind('<<ComboboxSelected>>', self._clear)
         self._heuristic_frame.pack_forget()
 
-        # ── estado inicial ───────────────────────────────────────────────────
+        # ── estado inicial ────────────────────────────────────────────────────
         self._divider()
         self._section('▸ ESTADO INICIAL')
         start_row = tk.Frame(self, bg=COLORS['panel'])
         start_row.pack(padx=16, pady=(0, 4), fill='x')
-        self.start_var = tk.StringVar(value=config.START_NODE)
+        self.start_var = tk.StringVar(value=config.STATES[0])
         self.start_var.trace_add('write', self._on_state_change)
-        self.start_cb = ttk.Combobox(start_row, textvariable=self.start_var,
-                                     values=config.STATES, state='readonly',
-                                     width=10, font=self._fonts['mono'])
-        self.start_cb.bind('<<ComboboxSelected>>', self._clear)
-        self.start_cb.pack(side='left')
+        self._start_cb = ttk.Combobox(start_row, textvariable=self.start_var,
+                                      values=config.STATES, state='readonly',
+                                      width=10, font=self._fonts['mono'])
+        self._start_cb.bind('<<ComboboxSelected>>', self._clear)
+        self._start_cb.pack(side='left')
         pick_start_btn = tk.Button(
             start_row, text='📍',
             font=self._fonts['mono'],
             bg=COLORS['node_default'], fg=COLORS['accent'],
             activebackground=COLORS['accent'], activeforeground='#ffffff',
             relief='flat', cursor='hand2', padx=6,
-            command=self._fire_pick_start,
-        )
+            command=self._fire_pick_start)
         pick_start_btn.pack(side='left', padx=(6, 0))
         self._pick_btns['start'] = pick_start_btn
 
-        # ── estado objetivo ──────────────────────────────────────────────────
+        # ── estado objetivo ───────────────────────────────────────────────────
         self._section('▸ ESTADO OBJETIVO')
         goal_row = tk.Frame(self, bg=COLORS['panel'])
         goal_row.pack(padx=16, pady=(0, 4), fill='x')
-        self.goal_var = tk.StringVar(value=config.GOAL_NODE)
+        self.goal_var = tk.StringVar(value=config.STATES[-1])
         self.goal_var.trace_add('write', self._on_state_change)
-        self.goal_cb = ttk.Combobox(goal_row, textvariable=self.goal_var,
-                                    values=config.STATES, state='readonly',
-                                    width=10, font=self._fonts['mono'])
-        self.goal_cb.bind('<<ComboboxSelected>>', self._clear)
-        self.goal_cb.pack(side='left')
+        self._goal_cb = ttk.Combobox(goal_row, textvariable=self.goal_var,
+                                     values=config.STATES, state='readonly',
+                                     width=10, font=self._fonts['mono'])
+        self._goal_cb.bind('<<ComboboxSelected>>', self._clear)
+        self._goal_cb.pack(side='left')
         pick_goal_btn = tk.Button(
             goal_row, text='🎯',
             font=self._fonts['mono'],
             bg=COLORS['node_default'], fg=COLORS['success'],
             activebackground=COLORS['success'], activeforeground='#ffffff',
             relief='flat', cursor='hand2', padx=6,
-            command=self._fire_pick_goal,
-        )
+            command=self._fire_pick_goal)
         pick_goal_btn.pack(side='left', padx=(6, 0))
         self._pick_btns['goal'] = pick_goal_btn
 
-        # ── botões de ação ───────────────────────────────────────────────────
+        # ── botões de ação ────────────────────────────────────────────────────
         self._divider()
+
         tk.Button(self, text='▶  EXECUTAR BUSCA',
                   font=self._fonts['section'],
                   bg=COLORS['accent'], fg='#ffffff',
@@ -180,62 +183,71 @@ class ControlPanel(tk.Frame):
                       command=self._on_regenerate, pady=6,
                       ).pack(padx=16, pady=(0, 4), fill='x')
 
-        # ── seção multiverso ─────────────────────────────────────────────────
+        # ── animação ──────────────────────────────────────────────────────────
         self._divider()
-        self._section('▸ MULTIVERSO')
+        self.animate_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(self, text='Animação do caminho',
+                       variable=self.animate_var,
+                       font=self._fonts['section'],
+                       bg=COLORS['panel'], fg=COLORS['text_dim'],
+                       activebackground=COLORS['panel'],
+                       selectcolor=COLORS['node_default'],
+                       relief='flat', cursor='hand2',
+                       ).pack(padx=16, pady=(0, 4), anchor='w')
 
-        # Nº de mapas
-        n_row = tk.Frame(self, bg=COLORS['panel'])
-        n_row.pack(padx=16, pady=(2, 0), fill='x')
-        tk.Label(n_row, text='Nº de mapas:',
-                 font=self._fonts['section'],
-                 bg=COLORS['panel'], fg=COLORS['text_dim'],
-                 width=13, anchor='w').pack(side='left')
-        self.n_maps_var = tk.IntVar(value=6)
-        tk.Spinbox(n_row, from_=2, to=12,
-                   textvariable=self.n_maps_var,
-                   width=4, font=self._fonts['mono'],
-                   bg=COLORS['node_default'], fg=COLORS['text'],
-                   buttonbackground=COLORS['panel_border'],
-                   relief='flat', insertbackground=COLORS['text'],
-                   ).pack(side='left')
-
-        # Custo do portal
-        p_row = tk.Frame(self, bg=COLORS['panel'])
-        p_row.pack(padx=16, pady=(4, 0), fill='x')
-        tk.Label(p_row, text='Custo portal:',
-                 font=self._fonts['section'],
-                 bg=COLORS['panel'], fg=COLORS['text_dim'],
-                 width=13, anchor='w').pack(side='left')
-        self.portal_cost_var = tk.DoubleVar(value=1.0)
-        tk.Spinbox(p_row, from_=0.5, to=10.0, increment=0.5,
-                   textvariable=self.portal_cost_var,
-                   width=4, font=self._fonts['mono'],
-                   bg=COLORS['node_default'], fg=COLORS['text'],
-                   buttonbackground=COLORS['panel_border'],
-                   relief='flat', insertbackground=COLORS['text'],
-                   format='%.1f',
-                   ).pack(side='left')
-
-        # Botão gerar multiverso
+        # ── seção multiverso ──────────────────────────────────────────────────
         if self._on_regenerate_multiverse:
-            tk.Button(self, text='⊕  GERAR MULTIVERSO',
+            self._divider()
+            self._section('▸ MULTIVERSO')
+
+            n_row = tk.Frame(self, bg=COLORS['panel'])
+            n_row.pack(padx=16, pady=(0, 4), fill='x')
+            tk.Label(n_row, text='Nº de mapas:',
+                     font=self._fonts['section'],
+                     bg=COLORS['panel'], fg=COLORS['text_dim']
+                     ).pack(side='left')
+            self._n_maps_var = tk.IntVar(value=4)
+            tk.Spinbox(n_row, from_=2, to=12,
+                       textvariable=self._n_maps_var, width=4,
+                       font=self._fonts['mono'],
+                       bg=COLORS['node_default'], fg=COLORS['text'],
+                       buttonbackground=COLORS['panel_border'],
+                       relief='flat', insertbackground=COLORS['text'],
+                       ).pack(side='left', padx=(8, 0))
+
+            c_row = tk.Frame(self, bg=COLORS['panel'])
+            c_row.pack(padx=16, pady=(0, 4), fill='x')
+            tk.Label(c_row, text='Custo do portal:',
+                     font=self._fonts['section'],
+                     bg=COLORS['panel'], fg=COLORS['text_dim']
+                     ).pack(side='left')
+            self._portal_cost_var = tk.DoubleVar(value=1.0)
+            tk.Spinbox(c_row, from_=0.1, to=10.0, increment=0.5,
+                       textvariable=self._portal_cost_var, width=5,
+                       format='%.1f',
+                       font=self._fonts['mono'],
+                       bg=COLORS['node_default'], fg=COLORS['text'],
+                       buttonbackground=COLORS['panel_border'],
+                       relief='flat', insertbackground=COLORS['text'],
+                       ).pack(side='left', padx=(8, 0))
+
+            tk.Button(self, text='🌀  GERAR MULTIVERSO',
                       font=self._fonts['section'],
-                      bg=COLORS['panel_border'], fg=COLORS['tile_portal_glow'],
-                      activebackground=COLORS['node_default'],
-                      activeforeground=COLORS['tile_portal_glow'],
+                      bg=COLORS['accent2'], fg='#ffffff',
+                      activebackground='#C070FF',
+                      activeforeground='#ffffff',
                       relief='flat', cursor='hand2',
                       command=self._fire_regenerate_multiverse, pady=6,
-                      ).pack(padx=16, pady=(6, 4), fill='x')
+                      ).pack(padx=16, pady=(4, 4), fill='x')
 
-        # ── legenda ──────────────────────────────────────────────────────────
+        # ── legenda ───────────────────────────────────────────────────────────
         self._divider()
         self._section('▸ LEGENDA')
         for clr, label in [
             (COLORS['accent'],          'Estado inicial'),
             (COLORS['success'],         'Estado objetivo'),
             (COLORS['accent2'],         'Caminho encontrado'),
-            (COLORS['tile_portal_glow'],'Portal'),
+            (COLORS['tile_portal_glow'],'Portal de mapa'),
             (COLORS['text_dim'],        'Estado não visitado'),
         ]:
             row = tk.Frame(self, bg=COLORS['panel'])
@@ -263,14 +275,32 @@ class ControlPanel(tk.Frame):
 
     # ── API pública ──────────────────────────────────────────────────────────
 
-    def refresh_states(self, states: list[str], start: str, goal: str) -> None:
-        """Atualiza comboboxes de início/fim após regeneração."""
-        self.start_cb['values'] = states
-        self.goal_cb['values']  = states
+    def refresh_states(self, states: list[str],
+                       start: str, goal: str):
+        """
+        Atualiza os comboboxes de início/fim após geração de novo mapa/multiverso.
+        Chamado por main.py depois de apply_multiverse() ou regenerate_maze().
+        """
+        self._start_cb['values'] = states
+        self._goal_cb['values']  = states
         self.start_var.set(start)
         self.goal_var.set(goal)
 
-    # ── eventos ─────────────────────────────────────────────────────────────
+    def set_pick_active(self, role: str | None):
+        """Destaca o botão de pick ativo e normaliza o outro."""
+        styles = {
+            'start': (COLORS['accent'],  '#ffffff'),
+            'goal':  (COLORS['success'], '#ffffff'),
+        }
+        defaults = {
+            'start': (COLORS['node_default'], COLORS['accent']),
+            'goal':  (COLORS['node_default'], COLORS['success']),
+        }
+        for key, btn in self._pick_btns.items():
+            bg, fg = styles[key] if key == role else defaults[key]
+            btn.config(bg=bg, fg=fg)
+
+    # ── eventos ──────────────────────────────────────────────────────────────
 
     def _fire_pick_start(self):
         self.set_pick_active('start')
@@ -282,34 +312,12 @@ class ControlPanel(tk.Frame):
         if self._on_pick_goal:
             self._on_pick_goal()
 
-    def _fire_regenerate_multiverse(self):
-        if self._on_regenerate_multiverse:
-            self._on_regenerate_multiverse(
-                self.n_maps_var.get(),
-                self.portal_cost_var.get(),
-            )
-
-    def set_pick_active(self, role: str | None):
-        """Destaca o botão de pick ativo e apaga o outro."""
-        styles = {
-            'start': (COLORS['accent'],  '#ffffff'),
-            'goal':  (COLORS['success'], '#ffffff'),
-        }
-        defaults = {
-            'start': (COLORS['node_default'], COLORS['accent']),
-            'goal':  (COLORS['node_default'], COLORS['success']),
-        }
-        for key, btn in self._pick_btns.items():
-            if key == role:
-                bg, fg = styles[key]
-            else:
-                bg, fg = defaults[key]
-            btn.config(bg=bg, fg=fg)
-
     def _fire_search(self):
-        heuristic_name = ('dijkstra'
-                          if self.heuristic_var.get() == 'Dijkstra (apelação)'
-                          else 'manhattan')
+        heuristic_name = (
+            'dijkstra'
+            if self.heuristic_var.get() == 'Dijkstra (apelação)'
+            else 'manhattan'
+        )
         self._on_search(
             method=self.method_var.get(),
             start=self.start_var.get(),
@@ -317,6 +325,13 @@ class ControlPanel(tk.Frame):
             depth_limit=self.depth_var.get(),
             heuristic_name=heuristic_name,
         )
+
+    def _fire_regenerate_multiverse(self):
+        if self._on_regenerate_multiverse:
+            self._on_regenerate_multiverse(
+                n_maps=self._n_maps_var.get(),
+                portal_cost=self._portal_cost_var.get(),
+            )
 
     def _on_state_change(self, *_):
         config.START_NODE = self.start_var.get()
@@ -331,12 +346,10 @@ class ControlPanel(tk.Frame):
             self._depth_label.config(text='Limite de Profundidade:')
             self.depth_var.set(30)
             self._depth_frame.pack(padx=16, pady=4, fill='x')
-
         elif method == 'Aprofundamento Iterativo (IDDFS)':
             self._depth_label.config(text='Profundidade Máxima:')
             self.depth_var.set(30)
             self._depth_frame.pack(padx=16, pady=4, fill='x')
-
         else:
             self._depth_frame.pack_forget()
 
@@ -378,4 +391,6 @@ class ControlPanel(tk.Frame):
                         darkcolor=COLORS['panel_border'])
         style.map('TCombobox',
                   fieldbackground=[('readonly', COLORS['node_default'])],
-                  foreground=[('readonly', COLORS['text'])])
+                  foreground=[('readonly', COLORS['text'])],
+                  selectbackground=[('readonly', COLORS['accent'])],
+                  selectforeground=[('readonly', '#ffffff')])

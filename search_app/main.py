@@ -1,13 +1,18 @@
 """
-main.py
-=======
+main.py  —  MERGED (testes-procedural × modificacoes)
+======================================================
 Ponto de entrada da aplicação.
 
 Responsabilidade única: instanciar a janela, criar os widgets,
 conectar os callbacks e iniciar o loop de eventos.
 
-Não contém lógica de busca, desenho de grafo nem estilos visuais —
-cada uma dessas responsabilidades vive no módulo correspondente.
+Integração realizada:
+  - Checkbox de animação conectado ao GraphCanvas  (testes-procedural)
+  - Fluxo completo de multiverso                  (modificacoes)
+  - Transição instantânea ao trocar de mapa: chama render() com o
+    caminho completo já calculado, sem re-executar a busca.
+  - Estado final preservado ao concluir: o rastro de todos os mapas
+    percorridos NÃO é limpo — apenas o status é atualizado.
 """
 import webbrowser
 import tkinter as tk
@@ -39,13 +44,13 @@ class SearchApp(tk.Tk):
         self.minsize(WINDOW['min_width'], WINDOW['min_height'])
 
         self._fonts = self._create_fonts()
-        self._last_path:  list[str] = []   # caminho da última busca
+        self._last_path:  list[str] = []
         self._last_start: str = config.START_NODE
         self._last_goal:  str = config.GOAL_NODE
         self._build_ui()
         self._center_window()
 
-    # ── criação das fontes ────────────────────────────────────────────────────
+    # ── fontes ────────────────────────────────────────────────────────────────
 
     def _create_fonts(self) -> dict:
         return {
@@ -57,7 +62,7 @@ class SearchApp(tk.Tk):
             'node':    font.Font(family='Courier', size=11, weight='bold'),
         }
 
-    # ── construção da UI ─────────────────────────────────────────────────────
+    # ── construção da UI ──────────────────────────────────────────────────────
 
     def _build_ui(self):
         self._build_header()
@@ -88,12 +93,20 @@ class SearchApp(tk.Tk):
                  bg=COLORS['bg'], fg=COLORS['text_dim'],
                  anchor='w').pack(padx=4, pady=(4, 0))
 
-        self.graph_canvas = GraphCanvas(canvas_wrapper,
-                                        on_regenerate=self._handle_regenerate,
-                                        on_node_picked=self._handle_node_picked,
-                                        on_map_nav=self._handle_map_nav)
+        self.graph_canvas = GraphCanvas(
+            canvas_wrapper,
+            on_regenerate=self._handle_regenerate,
+            on_node_picked=self._handle_node_picked,
+            on_map_nav=self._handle_map_nav,
+            animation_on=True,          # valor inicial; sincronizado com checkbox
+        )
         self.graph_canvas.set_fonts(self._fonts)
         self.graph_canvas.pack(fill='both', expand=True)
+
+        # sincroniza checkbox de animação com o canvas
+        self.control.animate_var.trace_add(
+            'write', lambda *_: self.graph_canvas.set_animate(
+                self.control.animate_var.get()))
 
         # painel direito
         self.result = ResultPanel(body, fonts=self._fonts)
@@ -135,7 +148,7 @@ class SearchApp(tk.Tk):
         y = (self.winfo_screenheight() - h) // 2
         self.geometry(f'{w}x{h}+{x}+{y}')
 
-    # ── callbacks ────────────────────────────────────────────────────────────
+    # ── callbacks ─────────────────────────────────────────────────────────────
 
     def _handle_search(self, method: str, start: str,
                        goal: str, depth_limit: int,
@@ -148,11 +161,9 @@ class SearchApp(tk.Tk):
         self.result.set_status(f'Executando {method}...', COLORS['accent'])
         self.update()
 
-        # No modo multiverso usa o SUPER_GRAPH; no modo simples usa GRAPH
         graph = config.SUPER_GRAPH if config.MULTIVERSE_MODE else config.GRAPH
 
-        # Heurística: em modo multiverso sempre usa Dijkstra (Manhattan não
-        # faz sentido entre mapas)
+        # Em modo multiverso, Manhattan não faz sentido entre mapas
         effective_heuristic = (
             'dijkstra'
             if config.MULTIVERSE_MODE
@@ -172,7 +183,7 @@ class SearchApp(tk.Tk):
         self.graph_canvas.render(path=result.path, start=start, goal=goal)
         self.result.update_result(result)
 
-        # Guarda para reusar ao navegar entre mapas sem re-executar a busca
+        # Guarda para reusar ao navegar mapas sem re-executar a busca
         self._last_path  = result.path
         self._last_start = start
         self._last_goal  = goal
@@ -207,7 +218,7 @@ class SearchApp(tk.Tk):
         )
         config.apply_multiverse(mv)
 
-        # Reseta o caminho armazenado (novo multiverso, busca anterior inválida)
+        # Reseta o caminho armazenado
         self._last_path  = []
         self._last_start = config.START_NODE
         self._last_goal  = config.GOAL_NODE
@@ -228,7 +239,14 @@ class SearchApp(tk.Tk):
         )
 
     def _handle_map_nav(self, delta: int):
-        """Navega ±1 mapa e reaproveita o caminho já calculado."""
+        """
+        Navega ±1 mapa e reaproveita o caminho já calculado.
+
+        A troca é instantânea: config._apply_active_map() atualiza os
+        globais e render() é chamado com o path completo. O GraphCanvas
+        filtra internamente os nós do mapa ativo e cancela qualquer
+        animação pendente antes de redesenhar.
+        """
         if not config.MULTIVERSE_MODE or config.MULTIVERSE is None:
             return
         new_id = config.ACTIVE_MAP_ID + delta
@@ -261,7 +279,7 @@ class SearchApp(tk.Tk):
         goal  = self.control.goal_var.get()
         self.graph_canvas.render(start=start, goal=goal)
 
-    # ── diálogo Sobre ────────────────────────────────────────────────────────
+    # ── diálogo Sobre ─────────────────────────────────────────────────────────
 
     def _show_about(self):
         win = tk.Toplevel(self)
