@@ -40,6 +40,17 @@ def calcular_heuristica_dijkstra(goal, graph: dict) -> dict:
 
     return dist
 
+
+def calcular_heuristica_por_nome(nome, goal, graph):
+    # Se o nó usa prefixo de mapa, força Dijkstra
+    if goal.startswith("M") and ":" in goal:
+        return calcular_heuristica_dijkstra(goal, graph)
+    # Comportamento original para mapa único
+    coordenadas = list(graph)
+    if nome == 'dijkstra':
+        return calcular_heuristica_dijkstra(goal, graph)
+    return calcular_heuristica_manhattan(goal, graph, coordenadas)
+
 def calcular_heuristica_por_nome(nome: str, goal: str, graph: dict) -> dict:
     """Seleciona e retorna a heurística pelo nome ('manhattan' ou 'dijkstra')."""
     coordenadas = list(graph)

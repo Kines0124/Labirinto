@@ -3,23 +3,38 @@ ui/graph_canvas.py
 ==================
 Widget de canvas responsável exclusivamente pela renderização do mapa em grid.
 Renderiza um grid 15x15 com células livres (coloridas por terreno) e paredes.
-Tilesets podem substituir as cores mais tarde — veja _draw_tile().
+Portais são destacados com uma cor especial (azul-ciano) e o símbolo ⊕.
 """
 
 from __future__ import annotations
 from pathlib import Path
 import tkinter as tk
 import config
-from config import COLORS, GRID_MAP, GRID_WEIGHTS, GRID_ROWS, GRID_COLS, \
-                   START_NODE, GOAL_NODE
+from config import COLORS
 from PIL import Image, ImageTk  # pip install pillow
 
 
 def _node_to_rc(node: str) -> tuple[int, int]:
-    """'(r,c)' → (r, c)"""
-    inner = node.strip("()")
-    r, c = inner.split(",")
+    """
+    Converte um nó para (row, col).
+    Aceita tanto "(r,c)"  quanto  "M2:(r,c)".
+    """
+    # Remove prefixo de mapa se existir
+    if ':' in node:
+        node = node.split(':', 1)[1]
+    inner = node.strip('()')
+    r, c = inner.split(',')
     return int(r), int(c)
+
+
+def _node_map_id(node: str) -> int | None:
+    """Retorna o id do mapa de um nó 'M{id}:(r,c)', ou None para modo simples."""
+    if node.startswith('M') and ':' in node:
+        try:
+            return int(node.split(':')[0][1:])
+        except ValueError:
+            pass
+    return None
 
 
 # Mapeamento terreno → chave de cor em COLORS
@@ -46,31 +61,25 @@ class GraphCanvas(tk.Canvas):
     _MIN_CELL = 20
     _MAX_CELL = 48
 
-    def __init__(self, parent, on_regenerate=None, on_node_picked=None, **kwargs):
+    def __init__(self, parent, on_regenerate=None, on_node_picked=None,
+                 on_map_nav=None, **kwargs):
         super().__init__(parent, bg=COLORS['bg'],
                          highlightthickness=0, **kwargs)
         self._fonts: dict = {}
-        self._on_regenerate = on_regenerate
-        self._on_node_picked = on_node_picked   # callback(role, node)
-        self._pick_mode: str | None = None       # 'start' | 'goal' | None
+        self._on_regenerate  = on_regenerate
+        self._on_node_picked = on_node_picked
+        self._on_map_nav     = on_map_nav   # callback(delta: int) — +1 ou -1
+        self._pick_mode: str | None = None
         self.bind('<Configure>', lambda _e: self.render())
         self.bind('<Button-1>', self._on_canvas_click)
-        # SUBSTITUIR POR ISSO DEPOIS
-        # self._tile_imgs: dict[str, ImageTk.PhotoImage] = {}  # ← adiciona
-        # self.bind('<Configure>', lambda _e: self._reload_tiles() or self.render())  # ← troca
-        
+
     def clear_path(self):
         self.render(path=[])
 
     def set_pick_mode(self, mode: str | None):
         """Ativa ('start'/'goal') ou desativa (None) o modo de seleção por clique."""
         self._pick_mode = mode
-        if mode == 'start':
-            self.config(cursor='crosshair')
-        elif mode == 'goal':
-            self.config(cursor='crosshair')
-        else:
-            self.config(cursor='')
+        self.config(cursor='crosshair' if mode else '')
 
     def _on_canvas_click(self, event):
         if not self._pick_mode:
@@ -90,17 +99,20 @@ class GraphCanvas(tk.Canvas):
 
         if not (0 <= r < grid_rows and 0 <= c < grid_cols):
             return
-        if grid_map[r][c] == 1:          # parede — ignora
+        if grid_map[r][c] == 1:
             return
 
-        node = f"({r},{c})"
+        # Formata o nó com ou sem prefixo de mapa
+        if config.MULTIVERSE_MODE:
+            node = f"M{config.ACTIVE_MAP_ID}:({r},{c})"
+        else:
+            node = f"({r},{c})"
+
         role = self._pick_mode
-        self.set_pick_mode(None)         # desativa após a seleção
+        self.set_pick_mode(None)
 
         if self._on_node_picked:
             self._on_node_picked(role, node)
-
-
 
     def set_fonts(self, fonts: dict):
         self._fonts = fonts
@@ -111,13 +123,11 @@ class GraphCanvas(tk.Canvas):
         ch = self.winfo_height() or 480
         cell = self._cell_size(cw, ch, config.GRID_ROWS, config.GRID_COLS)
 
-        # só recarrega se o tamanho mudou
         if getattr(self, '_cached_cell', None) == cell:
             return
         self._cached_cell = cell
 
-        _ROOT = Path(__file__).parent.parent  # sobe de ui/ para a raiz
-
+        _ROOT = Path(__file__).parent.parent
         paths = {
             'plains':   _ROOT / 'assets' / 'tilesets' / 'plains.png',
             'forest':   _ROOT / 'assets' / 'tilesets' / 'forest.png',
@@ -128,7 +138,7 @@ class GraphCanvas(tk.Canvas):
         }
         self._tile_imgs = {}
         for name, filepath in paths.items():
-            img = Image.open(filepath).resize((cell, cell), Image.NEAREST) # Trocar pra Image.LANCZOS para alta resolução
+            img = Image.open(filepath).resize((cell, cell), Image.NEAREST)
             self._tile_imgs[name] = ImageTk.PhotoImage(img)
 
     # ── API pública ──────────────────────────────────────────────────────────
@@ -138,7 +148,6 @@ class GraphCanvas(tk.Canvas):
         """Redesenha o mapa completo lendo os globais atuais de config."""
         self.delete('all')
 
-        # Lê sempre do módulo para pegar o estado mais recente após regeneração
         grid_map     = config.GRID_MAP
         grid_weights = config.GRID_WEIGHTS
         grid_rows    = config.GRID_ROWS
@@ -149,7 +158,28 @@ class GraphCanvas(tk.Canvas):
         start = start or config.START_NODE
         goal  = goal  or config.GOAL_NODE
 
-        path_set = set(path)
+        # Filtra o caminho para mostrar só nós do mapa ativo
+        if config.MULTIVERSE_MODE:
+            active_id = config.ACTIVE_MAP_ID
+            path_set  = {
+                _node_to_rc(n)
+                for n in path
+                if _node_map_id(n) == active_id
+            }
+            # Converte start/goal para (r,c) se forem do mapa ativo
+            start_rc = _node_to_rc(start) if _node_map_id(start) == active_id else None
+            goal_rc  = _node_to_rc(goal)  if _node_map_id(goal)  == active_id else None
+        else:
+            path_set = {_node_to_rc(n) for n in path}
+            start_rc = _node_to_rc(start) if start else None
+            goal_rc  = _node_to_rc(goal)  if goal  else None
+
+        # Células que contêm portais no mapa ativo
+        portal_cells: set[tuple[int, int]] = set()
+        if config.MULTIVERSE_MODE and config.MULTIVERSE is not None:
+            from multiverse import portal_cells_of_map
+            portal_cells = portal_cells_of_map(config.MULTIVERSE,
+                                               config.ACTIVE_MAP_ID)
 
         cw = self.winfo_width()  or 600
         ch = self.winfo_height() or 480
@@ -161,69 +191,75 @@ class GraphCanvas(tk.Canvas):
 
         for r in range(grid_rows):
             for c in range(grid_cols):
-                node   = f"({r},{c})"
-                wall   = grid_map[r][c] == 1
-                weight = grid_weights[r][c] or 1.0
+                wall    = grid_map[r][c] == 1
+                weight  = grid_weights[r][c] or 1.0
                 terrain = (terrain_map[r][c]
                            if terrain_map and not wall else None)
+                rc = (r, c)
                 self._draw_tile(
                     r, c, cell, ox, oy,
                     wall=wall,
-                    in_path=(node in path_set),
-                    is_start=(node == start),
-                    is_goal=(node == goal),
+                    in_path=(rc in path_set),
+                    is_start=(start_rc == rc),
+                    is_goal=(goal_rc  == rc),
+                    is_portal=(rc in portal_cells and not wall),
                     weight=weight,
                     terrain=terrain,
                 )
 
-        if len(path) > 1:
-            self._draw_path_overlay(path, cell, ox, oy)
+        # Path overlay apenas com nós do mapa ativo (coordenadas locais)
+        if config.MULTIVERSE_MODE:
+            local_path = [
+                f"({r},{c})" for r, c in
+                [_node_to_rc(n) for n in path
+                 if _node_map_id(n) == config.ACTIVE_MAP_ID]
+            ]
+        else:
+            local_path = path
 
-        self._draw_path_indices(path, cell, ox, oy)
+        if len(local_path) > 1:
+            self._draw_path_overlay(local_path, cell, ox, oy)
+
+        self._draw_path_indices(local_path, cell, ox, oy)
 
         if self._on_regenerate:
             self._draw_regen_button()
 
+        # Banner + setas de navegação no modo multiverso
+        if config.MULTIVERSE_MODE:
+            self._draw_map_banner()
+            self._draw_nav_arrows(cw, ch)
+
     # ── layout ───────────────────────────────────────────────────────────────
 
-    def _cell_size(self, cw: int, ch: int,
-                   grid_rows: int, grid_cols: int) -> int:
+    def _cell_size(self, cw, ch, grid_rows, grid_cols):
         sx = (cw - 40) // grid_cols
         sy = (ch - 40) // grid_rows
         return max(self._MIN_CELL, min(self._MAX_CELL, sx, sy))
 
-    def _origin(self, cw: int, ch: int, cell: int,
-                grid_rows: int, grid_cols: int) -> tuple[int, int]:
+    def _origin(self, cw, ch, cell, grid_rows, grid_cols):
         ox = (cw - cell * grid_cols) // 2
         oy = (ch - cell * grid_rows) // 2
         return ox, oy
 
-    def _tile_rect(self, r: int, c: int, cell: int,
-                   ox: int, oy: int) -> tuple[int, int, int, int]:
+    def _tile_rect(self, r, c, cell, ox, oy):
         x1 = ox + c * cell
         y1 = oy + r * cell
         return x1, y1, x1 + cell, y1 + cell
 
-    def _tile_center(self, r: int, c: int, cell: int,
-                     ox: int, oy: int) -> tuple[float, float]:
+    def _tile_center(self, r, c, cell, ox, oy):
         x1, y1, x2, y2 = self._tile_rect(r, c, cell, ox, oy)
         return (x1 + x2) / 2, (y1 + y2) / 2
 
     # ── desenho ──────────────────────────────────────────────────────────────
 
-    def _draw_background(self, cw: int, ch: int):
+    def _draw_background(self, cw, ch):
         self.create_rectangle(0, 0, cw, ch, fill=COLORS['bg'], outline='')
 
-    def _draw_tile(self, r: int, c: int, cell: int, ox: int, oy: int,
-                   wall: bool, in_path: bool,
-                   is_start: bool, is_goal: bool,
-                   weight: float = 1.0, terrain=None):
-        
-        """
-        Troca futura por tileset:
-            substituir create_rectangle por
-            self.create_image(x1, y1, anchor='nw', image=TILE_IMG[tipo])
-        """
+    def _draw_tile(self, r, c, cell, ox, oy,
+                   wall, in_path, is_start, is_goal,
+                   is_portal=False,
+                   weight=1.0, terrain=None):
         x1, y1, x2, y2 = self._tile_rect(r, c, cell, ox, oy)
         pad = 1
 
@@ -249,9 +285,11 @@ class GraphCanvas(tk.Canvas):
         elif in_path:
             fill = COLORS['node_path']
             glow = COLORS['node_glow_path']
+        elif is_portal:
+            fill = COLORS['tile_portal']
+            glow = COLORS['tile_portal_glow']
         else:
             glow = None
-            # usa a cor do terreno se disponível, senão fallback por peso
             if terrain is not None:
                 color_key = _TERRAIN_COLOR.get(terrain.name, 'tile_free')
                 fill = COLORS[color_key]
@@ -278,50 +316,23 @@ class GraphCanvas(tk.Canvas):
             self._draw_marker(cx, cy, r_mark, COLORS['accent'], 'S')
         elif is_goal:
             self._draw_marker(cx, cy, r_mark, COLORS['success'], 'G')
+        elif is_portal and cell >= 20:
+            # símbolo ⊕ no tile de portal
+            f = self._fonts.get('section')
+            if f:
+                self.create_text(cx, cy, text='⊕', font=f,
+                                 fill=COLORS['tile_portal_glow'])
         elif not in_path and cell >= 28:
             self._draw_weight_label(x1, y1, weight)
 
-    # DESCOMENTAR ISSO AQUI E DELETAR O _draw_tile ANTERIOR
-
-    # def _draw_tile(self, r, c, cell, ox, oy, wall, in_path,
-    #            is_start, is_goal, weight, terrain=None):
-    #     x1, y1, x2, y2 = self._tile_rect(r, c, cell, ox, oy)
-
-    #     # ── resolve qual chave de tileset usar ──
-    #     if wall:
-    #         tile_key = 'wall'
-    #     elif in_path and not is_start and not is_goal:
-    #         tile_key = 'path'
-    #     elif terrain is not None:
-    #         tile_key = terrain.name          # 'plains', 'forest', etc.
-    #     else:
-    #         tile_key = 'plains'              # fallback
-
-    #     # ── tenta renderizar com imagem, cai em retângulo se não tiver ──
-    #     img = self._tile_imgs.get(tile_key)
-    #     if img:
-    #         self.create_image(x1, y1, anchor='nw', image=img)
-    #     else:
-    #         # fallback: comportamento atual com create_rectangle
-    #         ...  # mantém o código de retângulo que já existe
-
-    #     # marcadores S e G ficam por cima da imagem — não mudam
-    #     if is_start:
-    #         cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-    #         self._draw_marker(cx, cy, max(4, cell // 5), COLORS['accent'], 'S')
-    #     elif is_goal:
-    #         cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-    #         self._draw_marker(cx, cy, max(4, cell // 5), COLORS['success'], 'G')
-
-    def _draw_marker(self, cx: float, cy: float, r: int,
-                     color: str, label: str):
+    def _draw_marker(self, cx, cy, r, color, label):
         self.create_oval(cx - r, cy - r, cx + r, cy + r,
                          fill=color, outline='')
         f = self._fonts.get('section')
         if f:
             self.create_text(cx, cy, text=label, font=f, fill='#ffffff')
 
-    def _draw_weight_label(self, x1: float, y1: float, weight: float):
+    def _draw_weight_label(self, x1, y1, weight):
         f = self._fonts.get('section')
         if not f:
             return
@@ -337,8 +348,7 @@ class GraphCanvas(tk.Canvas):
         self.create_text(x1 + 6, y1 + 6, text=text, font=f,
                          fill=color, anchor='nw')
 
-    def _draw_path_overlay(self, path: list[str], cell: int,
-                            ox: int, oy: int):
+    def _draw_path_overlay(self, path: list[str], cell, ox, oy):
         points = []
         for node in path:
             r, c = _node_to_rc(node)
@@ -355,8 +365,7 @@ class GraphCanvas(tk.Canvas):
                              width=max(2, cell // 6),
                              smooth=True, joinstyle='round', capstyle='round')
 
-    def _draw_path_indices(self, path: list[str], cell: int,
-                            ox: int, oy: int):
+    def _draw_path_indices(self, path: list[str], cell, ox, oy):
         f = self._fonts.get('section')
         if not f or cell < 28:
             return
@@ -410,3 +419,101 @@ class GraphCanvas(tk.Canvas):
         self.tag_bind('regen_btn', '<Leave>',    on_leave)
         self.tag_bind('regen_btn', '<Button-1>',
                       lambda _e: self._on_regenerate())
+
+    def _draw_nav_arrows(self, cw: int, ch: int):
+        """
+        Setas ◀ / ▶ nas laterais do canvas para navegar entre mapas.
+        Desenhadas como retângulos clicáveis com hover — sem widgets Tkinter extras.
+        """
+        if config.MULTIVERSE is None or not self._on_map_nav:
+            return
+
+        mv  = config.MULTIVERSE
+        mid = config.ACTIVE_MAP_ID
+
+        aw, ah  = 36, 72          # largura e altura do botão
+        margin  = 6               # distância da borda do canvas
+        mid_y   = ch // 2
+        y1      = mid_y - ah // 2
+        y2      = mid_y + ah // 2
+        corner  = 6
+
+        f = self._fonts.get('title') or self._fonts.get('section')
+
+        # ── seta esquerda (mapa anterior) ────────────────────────────────────
+        if mid > 0:
+            lx1, lx2 = margin, margin + aw
+            btn_l = self.create_rectangle(
+                lx1, y1, lx2, y2,
+                fill=COLORS['panel_border'],
+                outline=COLORS['accent'], width=1,
+                tags='nav_prev',
+            )
+            self.create_text(
+                (lx1 + lx2) / 2, (y1 + y2) / 2,
+                text='◀', font=f, fill=COLORS['accent'],
+                tags='nav_prev',
+            )
+
+            def _prev_enter(_e, b=btn_l):
+                self.itemconfig(b, fill=COLORS['node_start'])
+                self.config(cursor='hand2')
+
+            def _prev_leave(_e, b=btn_l):
+                self.itemconfig(b, fill=COLORS['panel_border'])
+                self.config(cursor='')
+
+            self.tag_bind('nav_prev', '<Enter>',    _prev_enter)
+            self.tag_bind('nav_prev', '<Leave>',    _prev_leave)
+            self.tag_bind('nav_prev', '<Button-1>',
+                          lambda _e: self._on_map_nav(-1))
+
+        # ── seta direita (próximo mapa) ───────────────────────────────────────
+        if mid < mv.n_maps - 1:
+            rx1, rx2 = cw - margin - aw, cw - margin
+            btn_r = self.create_rectangle(
+                rx1, y1, rx2, y2,
+                fill=COLORS['panel_border'],
+                outline=COLORS['accent'], width=1,
+                tags='nav_next',
+            )
+            self.create_text(
+                (rx1 + rx2) / 2, (y1 + y2) / 2,
+                text='▶', font=f, fill=COLORS['accent'],
+                tags='nav_next',
+            )
+
+            def _next_enter(_e, b=btn_r):
+                self.itemconfig(b, fill=COLORS['node_start'])
+                self.config(cursor='hand2')
+
+            def _next_leave(_e, b=btn_r):
+                self.itemconfig(b, fill=COLORS['panel_border'])
+                self.config(cursor='')
+
+            self.tag_bind('nav_next', '<Enter>',    _next_enter)
+            self.tag_bind('nav_next', '<Leave>',    _next_leave)
+            self.tag_bind('nav_next', '<Button-1>',
+                          lambda _e: self._on_map_nav(+1))
+
+    def _draw_map_banner(self):
+        """Banner no topo do canvas indicando o mapa ativo."""
+        if config.MULTIVERSE is None:
+            return
+        mv  = config.MULTIVERSE
+        mid = config.ACTIVE_MAP_ID
+        if mid == mv.start_map:
+            label = f'◈  Mapa {mid}  —  INÍCIO'
+            color = COLORS['accent']
+        elif mid == mv.goal_map:
+            label = f'◈  Mapa {mid}  —  SAÍDA REAL'
+            color = COLORS['success']
+        else:
+            label = f'◈  Mapa {mid}'
+            color = COLORS['warning']
+
+        f = self._fonts.get('section')
+        if f:
+            cw = self.winfo_width() or 600
+            self.create_text(cw // 2, 14, text=label, font=f,
+                             fill=color, anchor='center')
