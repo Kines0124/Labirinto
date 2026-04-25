@@ -165,6 +165,17 @@ class ControlPanel(tk.Frame):
                     relief='flat', cursor='hand2',
                     command=self._on_regenerate, pady=6,
                     ).pack(padx=16, pady=(0, 4), fill='x')
+            
+        self._divider()
+        self.animate_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(self, text='Animação do caminho',
+                    variable=self.animate_var,
+                    font=self._fonts['section'],
+                    bg=COLORS['panel'], fg=COLORS['text_dim'],
+                    activebackground=COLORS['panel'],
+                    selectcolor=COLORS['node_default'],
+                    relief='flat', cursor='hand2',
+                    ).pack(padx=16, pady=(0, 4), anchor='w')
 
         # ── legenda ──
         self._divider()

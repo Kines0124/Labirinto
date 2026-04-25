@@ -117,11 +117,13 @@ A interface é dividida em três painéis:
 
 - **Python 3.10 ou superior** (testado com Python 3.11)
 - **tkinter** — incluso na instalação padrão do Python no Windows e macOS
+- **Pillow** — para renderização dos tilesets e spritesheets
 
-> **Linux:** o tkinter pode precisar ser instalado separadamente:
+> **Linux:** tkinter e Pillow podem precisar ser instalados separadamente:
 > ```bash
 > # Ubuntu/Debian
 > sudo apt install python3-tk
+> sudo apt install python3-pil.imagetk
 >
 > # Fedora
 > sudo dnf install python3-tkinter
@@ -130,7 +132,10 @@ A interface é dividida em três painéis:
 > sudo pacman -S tk
 > ```
 
-O projeto **não possui dependências externas** — nenhum pacote precisa ser instalado via `pip`.
+Instale as dependências externas com:
+```bash
+pip install pillow
+```
 
 ---
 

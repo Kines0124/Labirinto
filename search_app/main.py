@@ -86,7 +86,8 @@ class SearchApp(tk.Tk):
 
         self.graph_canvas = GraphCanvas(canvas_wrapper,
                                 on_regenerate=self._handle_regenerate,
-                                on_node_picked=self._handle_node_picked)
+                                on_node_picked=self._handle_node_picked,
+                                animation_on=self._handle_animation)
         self.graph_canvas.set_fonts(self._fonts)
         self.graph_canvas.pack(fill='both', expand=True)
 
@@ -140,6 +141,7 @@ class SearchApp(tk.Tk):
                                    COLORS['warning'])
             return
 
+        self.graph_canvas.set_animate(self.control.animate_var.get())
         self.result.set_status(f'Executando {method}...', COLORS['accent'])
         self.update()
 
@@ -260,6 +262,9 @@ class SearchApp(tk.Tk):
         self.control.goal_var.set(config.STATES[-1])
         self.graph_canvas.render()
         self.result.clear()
+
+    def _handle_animation(self):
+        self.graph_canvas.set_animate(self.control.animate_var.get())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
