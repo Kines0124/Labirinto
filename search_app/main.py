@@ -1,18 +1,17 @@
 """
-main.py  —  MERGED (testes-procedural × modificacoes)
-======================================================
-Ponto de entrada da aplicação.
+main.py  —  v3 (travessia automática de portais + rastro fixo)
+==============================================================
+Orquestrador principal da aplicação.
 
-Responsabilidade única: instanciar a janela, criar os widgets,
-conectar os callbacks e iniciar o loop de eventos.
-
-Integração realizada:
-  - Checkbox de animação conectado ao GraphCanvas  (testes-procedural)
-  - Fluxo completo de multiverso                  (modificacoes)
-  - Transição instantânea ao trocar de mapa: chama render() com o
-    caminho completo já calculado, sem re-executar a busca.
-  - Estado final preservado ao concluir: o rastro de todos os mapas
-    percorridos NÃO é limpo — apenas o status é atualizado.
+Novidades
+---------
+- on_map_switch  →  chamado pelo GraphCanvas quando o personagem cruza
+                    um portal durante a animação. Atualiza config para
+                    o novo mapa SEM cancelar animação nem chamar render().
+- _handle_map_nav →  navegação manual pelas setas usa render(static=True):
+                     exibe o caminho já traçado como rastro fixo, sem
+                     reanimar. O sprite fica em idle na última posição
+                     visitada naquele mapa.
 """
 import webbrowser
 import tkinter as tk
@@ -28,13 +27,6 @@ from ui.result_panel import ResultPanel
 
 
 class SearchApp(tk.Tk):
-    """
-    Orquestrador principal da aplicação.
-
-    Cria os três widgets (ControlPanel, GraphCanvas, ResultPanel),
-    injeta os callbacks e trata os eventos de alto nível
-    (executar busca, limpar, gerar multiverso, trocar mapa).
-    """
 
     def __init__(self):
         super().__init__()
@@ -62,7 +54,7 @@ class SearchApp(tk.Tk):
             'node':    font.Font(family='Courier', size=11, weight='bold'),
         }
 
-    # ── construção da UI ──────────────────────────────────────────────────────
+    # ── UI ────────────────────────────────────────────────────────────────────
 
     def _build_ui(self):
         self._build_header()
@@ -70,7 +62,6 @@ class SearchApp(tk.Tk):
         body = tk.Frame(self, bg=COLORS['bg'])
         body.pack(fill='both', expand=True)
 
-        # painel esquerdo
         self.control = ControlPanel(
             body,
             on_search=self._handle_search,
@@ -85,7 +76,6 @@ class SearchApp(tk.Tk):
         )
         self.control.pack(side='left', fill='y', padx=(8, 4), pady=8)
 
-        # canvas central
         canvas_wrapper = tk.Frame(body, bg=COLORS['bg'])
         canvas_wrapper.pack(side='left', fill='both', expand=True, padx=4, pady=8)
         tk.Label(canvas_wrapper, text='LABIRINTO GERADO',
@@ -98,17 +88,16 @@ class SearchApp(tk.Tk):
             on_regenerate=self._handle_regenerate,
             on_node_picked=self._handle_node_picked,
             on_map_nav=self._handle_map_nav,
-            animation_on=True,          # valor inicial; sincronizado com checkbox
+            on_map_switch=self._handle_map_switch,   # ← novo
+            animation_on=True,
         )
         self.graph_canvas.set_fonts(self._fonts)
         self.graph_canvas.pack(fill='both', expand=True)
 
-        # sincroniza checkbox de animação com o canvas
         self.control.animate_var.trace_add(
             'write', lambda *_: self.graph_canvas.set_animate(
                 self.control.animate_var.get()))
 
-        # painel direito
         self.result = ResultPanel(body, fonts=self._fonts)
         self.result.pack(side='right', fill='y', padx=(4, 8), pady=8)
 
@@ -121,24 +110,19 @@ class SearchApp(tk.Tk):
                  bg=COLORS['panel'], fg=COLORS['accent'],
                  ).pack(side='left', padx=20, pady=10)
 
-        btn_style = dict(
-            font=self._fonts['label'],
-            relief='flat', cursor='hand2',
-            padx=14, pady=4,
-        )
+        btn_style = dict(font=self._fonts['label'], relief='flat',
+                         cursor='hand2', padx=14, pady=4)
 
         tk.Button(header, text='✕  Sair',
                   bg=COLORS['panel'], fg=COLORS['text_dim'],
                   activebackground='#c0392b', activeforeground='#ffffff',
-                  command=self.destroy,
-                  **btn_style,
+                  command=self.destroy, **btn_style,
                   ).pack(side='right', padx=(4, 16), pady=8)
 
         tk.Button(header, text='ℹ  Sobre',
                   bg=COLORS['panel'], fg=COLORS['text_dim'],
                   activebackground=COLORS['accent'], activeforeground='#ffffff',
-                  command=self._show_about,
-                  **btn_style,
+                  command=self._show_about, **btn_style,
                   ).pack(side='right', padx=4, pady=8)
 
     def _center_window(self):
@@ -162,13 +146,8 @@ class SearchApp(tk.Tk):
         self.update()
 
         graph = config.SUPER_GRAPH if config.MULTIVERSE_MODE else config.GRAPH
-
-        # Em modo multiverso, Manhattan não faz sentido entre mapas
-        effective_heuristic = (
-            'dijkstra'
-            if config.MULTIVERSE_MODE
-            else heuristic_name
-        )
+        effective_heuristic = ('dijkstra' if config.MULTIVERSE_MODE
+                               else heuristic_name)
 
         result = run_search(
             method=method,
@@ -180,10 +159,12 @@ class SearchApp(tk.Tk):
             heuristic_name=effective_heuristic,
         )
 
+        # Limpa histórico de visitas antes de iniciar nova animação
+        self.graph_canvas.reset_visited()
+
         self.graph_canvas.render(path=result.path, start=start, goal=goal)
         self.result.update_result(result)
 
-        # Guarda para reusar ao navegar mapas sem re-executar a busca
         self._last_path  = result.path
         self._last_start = start
         self._last_goal  = goal
@@ -197,16 +178,15 @@ class SearchApp(tk.Tk):
                                    COLORS['danger'])
 
     def _handle_regenerate(self):
-        """Regera em modo mapa único."""
         config.regenerate_maze()
         config.MULTIVERSE_MODE = False
+        self.graph_canvas.reset_visited()
         self.control.refresh_states(
             config.STATES, config.START_NODE, config.GOAL_NODE)
         self.graph_canvas.render()
         self.result.clear()
 
     def _handle_regenerate_multiverse(self, n_maps: int, portal_cost: float):
-        """Gera um novo multiverso e atualiza toda a UI."""
         self.result.set_status('Gerando multiverso...', COLORS['accent'])
         self.update()
 
@@ -218,18 +198,16 @@ class SearchApp(tk.Tk):
         )
         config.apply_multiverse(mv)
 
-        # Reseta o caminho armazenado
         self._last_path  = []
         self._last_start = config.START_NODE
         self._last_goal  = config.GOAL_NODE
+        self.graph_canvas.reset_visited()
 
-        # Atualiza comboboxes de início/fim
         self.control.refresh_states(
             [config.START_NODE, config.GOAL_NODE],
             config.START_NODE,
             config.GOAL_NODE,
         )
-
         self.graph_canvas.render()
         self.result.clear()
         self.result.set_status(
@@ -238,14 +216,23 @@ class SearchApp(tk.Tk):
             COLORS['success'],
         )
 
+    def _handle_map_switch(self, new_map_id: int):
+        """
+        Chamado pelo GraphCanvas durante a animação ao cruzar um portal.
+        Atualiza config para o novo mapa SEM interromper a animação.
+        O GraphCanvas já redesenhou os tiles; aqui só atualizamos o estado.
+        """
+        if not config.MULTIVERSE_MODE or config.MULTIVERSE is None:
+            return
+        if 0 <= new_map_id < config.MULTIVERSE.n_maps:
+            config._apply_active_map(new_map_id)
+
     def _handle_map_nav(self, delta: int):
         """
-        Navega ±1 mapa e reaproveita o caminho já calculado.
-
-        A troca é instantânea: config._apply_active_map() atualiza os
-        globais e render() é chamado com o path completo. O GraphCanvas
-        filtra internamente os nós do mapa ativo e cancela qualquer
-        animação pendente antes de redesenhar.
+        Navegação manual pelas setas ◀ / ▶.
+        Usa render(static=True): mostra o rastro já traçado como tiles
+        fixos sem reanimar. O sprite aparece em idle na última posição
+        visitada naquele mapa.
         """
         if not config.MULTIVERSE_MODE or config.MULTIVERSE is None:
             return
@@ -256,6 +243,7 @@ class SearchApp(tk.Tk):
                 path=self._last_path,
                 start=self._last_start,
                 goal=self._last_goal,
+                static=True,            # ← rastro fixo, sem reanimar
             )
 
     def _handle_reset(self):
@@ -265,7 +253,6 @@ class SearchApp(tk.Tk):
         self.result.clear()
 
     def _handle_node_picked(self, role: str, node: str):
-        """Recebe o nó clicado no canvas e atualiza o combobox correspondente."""
         self.control.set_pick_active(None)
         if role == 'start':
             self.control.start_var.set(node)
@@ -279,7 +266,7 @@ class SearchApp(tk.Tk):
         goal  = self.control.goal_var.get()
         self.graph_canvas.render(start=start, goal=goal)
 
-    # ── diálogo Sobre ─────────────────────────────────────────────────────────
+    # ── Sobre ─────────────────────────────────────────────────────────────────
 
     def _show_about(self):
         win = tk.Toplevel(self)
@@ -347,8 +334,6 @@ class SearchApp(tk.Tk):
                   command=win.destroy
                   ).pack(side='bottom', pady=20)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     app = SearchApp()
