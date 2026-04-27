@@ -13,6 +13,8 @@ Novidades
                      reanimar. O sprite fica em idle na última posição
                      visitada naquele mapa.
 """
+
+from algorithms.heuristica import calcular_heuristica_euclidiana
 import webbrowser
 import tkinter as tk
 from tkinter import font
@@ -135,26 +137,32 @@ class SearchApp(tk.Tk):
     # ── callbacks ─────────────────────────────────────────────────────────────
 
     def _handle_search(self, method: str, start: str,
-                       goal: str, depth_limit: int,
-                       heuristic_name: str = 'manhattan'):
+                    goal: str, depth_limit: int,
+                    heuristic_name: str = 'manhattan'):
         if start == goal:
-            self.result.set_status('⚠ Estado inicial = objetivo.',
-                                   COLORS['warning'])
+            self.result.set_status('⚠ Estado inicial = objetivo.', COLORS['warning'])
             return
 
         self.result.set_status(f'Executando {method}...', COLORS['accent'])
         self.update()
 
         graph = config.SUPER_GRAPH if config.MULTIVERSE_MODE else config.GRAPH
-        effective_heuristic = ('dijkstra' if config.MULTIVERSE_MODE
-                               else heuristic_name)
+
+        # Antes: forçava dijkstra no multiverso, ignorando escolha do usuário
+        # Agora: respeita a escolha, mas troca manhattan→euclidiana no multiverso
+        # (manhattan não faz sentido entre mapas; euclidiana sim)
+        if config.MULTIVERSE_MODE and heuristic_name == 'manhattan':
+            effective_heuristic = 'euclidiana'
+        else:
+            effective_heuristic = heuristic_name
+
 
         result = run_search(
             method=method,
             start=start,
             goal=goal,
             graph=graph,
-            heuristic=None,
+            heuristic=heuristic_name,
             depth_limit=depth_limit,
             heuristic_name=effective_heuristic,
         )

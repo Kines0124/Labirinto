@@ -17,7 +17,7 @@ import config
 from config import COLORS, SEARCH_METHODS
 
 HEURISTIC_METHODS = {'Greedy Best-First', 'A* (A-estrela)', 'AIA* (A* Iterativo)'}
-HEURISTIC_OPTIONS = ['Manhattan', 'Dijkstra (apelação)']
+HEURISTIC_OPTIONS = ['Manhattan', 'Euclidiana (Multiverso)' ,'Dijkstra (apelação)']
 
 
 class ControlPanel(tk.Frame):
@@ -313,11 +313,12 @@ class ControlPanel(tk.Frame):
             self._on_pick_goal()
 
     def _fire_search(self):
-        heuristic_name = (
-            'dijkstra'
-            if self.heuristic_var.get() == 'Dijkstra (apelação)'
-            else 'manhattan'
-        )
+        mapa = {
+            'Dijkstra (apelação)':       'dijkstra',
+            'Euclidiana (Multiverso)':   'euclidiana',
+            'Manhattan':                 'manhattan',
+        }
+        heuristic_name = mapa.get(self.heuristic_var.get(), 'manhattan')
         self._on_search(
             method=self.method_var.get(),
             start=self.start_var.get(),
