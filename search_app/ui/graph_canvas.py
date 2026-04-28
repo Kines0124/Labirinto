@@ -99,6 +99,9 @@ class GraphCanvas(tk.Canvas):
         self._sprite_frame_idx: dict[str, int]                      = {}
         self._anim_jobs:        dict[str, str]                      = {}
 
+        self._bidir_path_fwd: list[str] = []
+        self._bidir_path_bwd: list[str] = []
+
         self._cached_cell: int | None = None
 
         # Estado da animação em curso (necessário para switch mid-animation)
@@ -481,6 +484,13 @@ class GraphCanvas(tk.Canvas):
           - Chama _switch_map_mid_animation() para trocar a tela
           - Recalcula cell/ox/oy para o novo mapa e continua
         """
+        if index == 0 and self._is_bidirectional():
+            mid = len(path) // 2
+            self._bidir_path_fwd = path[:mid + 1]        # start → meio
+            self._bidir_path_bwd = list(reversed(path[mid:]))  # goal → meio
+            self._animate_bidir(cell, ox, oy, start, goal)
+            return
+
         if index >= len(path):
             # Fim do percurso
             self.delete('sprite_start')
@@ -597,6 +607,93 @@ class GraphCanvas(tk.Canvas):
             generation))                               
         self._anim_jobs[job_key] = job
 
+    def _is_bidirectional(self) -> bool:
+        return config.ACTIVE_METHOD == 'Bidirecional'
+
+    def _animate_bidir(self, cell, ox, oy, start, goal, index=0):
+        fwd = self._bidir_path_fwd
+        bwd = self._bidir_path_bwd
+        done_fwd = index >= len(fwd)
+        done_bwd = index >= len(bwd)
+
+        if done_fwd and done_bwd:
+            self.delete('sprite_start')
+            self.delete('sprite_goal')
+            meet = fwd[-1]
+            gr, gc = _node_to_rc(meet)
+            self._anim_jobs['end'] = None
+            self._play_sprite_loop(gr, gc, cell, ox, oy,
+                                sheet='end', tag='sprite_end',
+                                job_key='end', loop=True,
+                                generation=self._render_generation)
+            return
+
+        active = config.ACTIVE_MAP_ID if config.MULTIVERSE_MODE else None
+
+        # ── Sprite do START ───────────────────────────────────────────────
+        if not done_fwd:
+            node     = fwd[index]
+            node_map = _node_map_id(node)
+
+            if not config.MULTIVERSE_MODE or node_map == active:
+                r, c = _node_to_rc(node)
+                if index > 0:
+                    prev = fwd[index - 1]
+                    if not config.MULTIVERSE_MODE or _node_map_id(prev) == active:
+                        pr, pc = _node_to_rc(prev)
+                        tm = config.TERRAIN_MAP
+                        self._draw_tile(pr, pc, cell, ox, oy,
+                                        wall=False, in_path=True,
+                                        is_start=False, is_goal=False, is_portal=False,
+                                        weight=1,
+                                        terrain=(tm[pr][pc] if tm else None),
+                                        idx=index - 1, path=fwd)
+                self.delete('sprite_start')
+                sheet  = self._start_direction(index, fwd)
+                frames = self._sprite_frames.get(sheet, [])
+                if frames:
+                    x1, y1 = ox + c * cell, oy + r * cell
+                    self._sprite_frame_idx[sheet] = (
+                        self._sprite_frame_idx.get(sheet, 0) + 1) % len(frames)
+                    self.create_image(x1, y1, anchor='nw',
+                                    image=frames[self._sprite_frame_idx[sheet]],
+                                    tags='sprite_start')
+                    self.tag_raise('regen_btn')
+
+        # ── Sprite do GOAL ────────────────────────────────────────────────
+        if not done_bwd:
+            node     = bwd[index]
+            node_map = _node_map_id(node)
+
+            if not config.MULTIVERSE_MODE or node_map == active:
+                r, c = _node_to_rc(node)
+                if index > 0:
+                    prev = bwd[index - 1]
+                    if not config.MULTIVERSE_MODE or _node_map_id(prev) == active:
+                        pr, pc = _node_to_rc(prev)
+                        tm = config.TERRAIN_MAP
+                        self._draw_tile(pr, pc, cell, ox, oy,
+                                        wall=False, in_path=True,
+                                        is_start=False, is_goal=False, is_portal=False,
+                                        weight=1,
+                                        terrain=(tm[pr][pc] if tm else None),
+                                        idx=index - 1, path=bwd)
+                self.delete('sprite_goal')
+                sheet  = self._start_direction(index, bwd)
+                frames = self._sprite_frames.get(sheet, [])
+                if frames:
+                    x1, y1 = ox + c * cell, oy + r * cell
+                    self._sprite_frame_idx[sheet] = (
+                        self._sprite_frame_idx.get(sheet, 0) + 1) % len(frames)
+                    self.create_image(x1, y1, anchor='nw',
+                                    image=frames[self._sprite_frame_idx[sheet]],
+                                    tags='sprite_goal')
+                    self.tag_raise('regen_btn')
+
+        job = self.after(100, lambda: self._animate_bidir(
+            cell, ox, oy, start, goal, index + 1))
+        self._anim_jobs['path_walk'] = job
+        
     # ── Direção do sprite ─────────────────────────────────────────────────────
 
     def _start_direction(self, idx: int, path: list[str]) -> str:

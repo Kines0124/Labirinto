@@ -139,6 +139,9 @@ class SearchApp(tk.Tk):
     def _handle_search(self, method: str, start: str,
                     goal: str, depth_limit: int,
                     heuristic_name: str = 'manhattan'):
+        
+        config.ACTIVE_METHOD = method 
+
         if start == goal:
             self.result.set_status('⚠ Estado inicial = objetivo.', COLORS['warning'])
             return

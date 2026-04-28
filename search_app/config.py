@@ -186,6 +186,7 @@ STATES:         list[str]         = []
 START_NODE:     str               = "(0,0)"
 GOAL_NODE:      str               = "(14,14)"
 NODE_POSITIONS: dict              = {}
+ACTIVE_METHOD:  str               = ''
 
 # Multiverso (inicialmente None / desativado)
 MULTIVERSE_MODE: bool  = False
