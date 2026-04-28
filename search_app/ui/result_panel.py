@@ -6,10 +6,10 @@ caminho encontrado e barra de status.
 Não conhece algoritmos nem canvas.
 """
 
-import tkinter as tk
-from tkinter import font as tkfont
-from config import COLORS
-from search_result import SearchResult
+import  tkinter         as tk
+from    tkinter         import font as tkfont
+from    config          import COLORS
+from    search_result   import SearchResult
 
 
 class ResultPanel(tk.Frame):

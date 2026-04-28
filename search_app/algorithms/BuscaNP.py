@@ -1,4 +1,4 @@
-from collections import deque
+from collections     import deque
 from algorithms.Node import Node
 
 class buscaNP(object):

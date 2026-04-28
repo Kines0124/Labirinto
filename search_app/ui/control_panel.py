@@ -11,10 +11,10 @@ Integração realizada:
   - set_pick_active() para destacar botão de pick ativo
 """
 
-import tkinter as tk
-from tkinter import ttk
-import config
-from config import COLORS, SEARCH_METHODS
+import  tkinter as     tk
+from    tkinter import ttk
+import  config
+from    config  import COLORS, SEARCH_METHODS
 
 HEURISTIC_METHODS = {'Greedy Best-First', 'A* (A-estrela)', 'AIA* (A* Iterativo)'}
 HEURISTIC_OPTIONS = ['Manhattan', 'Euclidiana (Multiverso)' ,'Dijkstra (apelação)']
@@ -39,7 +39,8 @@ class ControlPanel(tk.Frame):
     def __init__(self, parent, on_search, on_reset, fonts: dict,
                  on_regenerate=None, on_clear_path=None, on_clear_result=None,
                  on_pick_start=None, on_pick_goal=None,
-                 on_regenerate_multiverse=None, **kwargs):
+                 on_regenerate_multiverse=None,
+                 on_exit_multiverse=None, **kwargs):
 
         super().__init__(parent, bg=COLORS['panel'], width=240,
                          highlightbackground=COLORS['panel_border'],
@@ -55,6 +56,7 @@ class ControlPanel(tk.Frame):
         self._on_pick_start            = on_pick_start
         self._on_pick_goal             = on_pick_goal
         self._on_regenerate_multiverse = on_regenerate_multiverse
+        self._on_exit_multiverse       = on_exit_multiverse
         self._pick_btns: dict[str, tk.Button] = {}
 
         self._build()
@@ -193,85 +195,72 @@ class ControlPanel(tk.Frame):
                        activebackground=COLORS['panel'],
                        selectcolor=COLORS['node_default'],
                        relief='flat', cursor='hand2',
-                       ).pack(padx=16, pady=(0, 4), anchor='w')
+                       ).pack(padx=16, pady=(0, 4), anchor='center')
 
         # ── seção multiverso ──────────────────────────────────────────────────
         if self._on_regenerate_multiverse:
             self._divider()
             self._section('▸ MULTIVERSO')
 
-            n_row = tk.Frame(self, bg=COLORS['panel'])
-            n_row.pack(padx=16, pady=(0, 4), fill='x')
-            tk.Label(n_row, text='Nº de mapas:',
-                     font=self._fonts['section'],
-                     bg=COLORS['panel'], fg=COLORS['text_dim']
-                     ).pack(side='left')
+            mv_grid = tk.Frame(self, bg=COLORS['panel'])
+            mv_grid.pack(padx=16, pady=(0, 4), fill='x')
+
+            tk.Label(mv_grid, text='Nº de mapas:',
+                    font=self._fonts['section'],
+                    bg=COLORS['panel'], fg=COLORS['text_dim']
+                    ).grid(row=0, column=0, sticky='w', pady=2)
             self._n_maps_var = tk.IntVar(value=4)
-            tk.Spinbox(n_row, from_=2, to=12,
-                       textvariable=self._n_maps_var, width=4,
-                       font=self._fonts['mono'],
-                       bg=COLORS['node_default'], fg=COLORS['text'],
-                       buttonbackground=COLORS['panel_border'],
-                       relief='flat', insertbackground=COLORS['text'],
-                       ).pack(side='left', padx=(8, 0))
+            tk.Spinbox(mv_grid, from_=2, to=12,
+                    textvariable=self._n_maps_var, width=5,
+                    font=self._fonts['mono'],
+                    bg=COLORS['node_default'], fg=COLORS['text'],
+                    buttonbackground=COLORS['panel_border'],
+                    relief='flat', insertbackground=COLORS['text'],
+                    ).grid(row=0, column=1, sticky='w', padx=(8, 0), pady=2)
 
-            c_row = tk.Frame(self, bg=COLORS['panel'])
-            c_row.pack(padx=16, pady=(0, 4), fill='x')
-            tk.Label(c_row, text='Custo do portal:',
-                     font=self._fonts['section'],
-                     bg=COLORS['panel'], fg=COLORS['text_dim']
-                     ).pack(side='left')
+            tk.Label(mv_grid, text='Custo do portal:',
+                    font=self._fonts['section'],
+                    bg=COLORS['panel'], fg=COLORS['text_dim']
+                    ).grid(row=1, column=0, sticky='w', pady=2)
             self._portal_cost_var = tk.DoubleVar(value=1.0)
-            tk.Spinbox(c_row, from_=0.1, to=10.0, increment=0.5,
-                       textvariable=self._portal_cost_var, width=5,
-                       format='%.1f',
-                       font=self._fonts['mono'],
-                       bg=COLORS['node_default'], fg=COLORS['text'],
-                       buttonbackground=COLORS['panel_border'],
-                       relief='flat', insertbackground=COLORS['text'],
-                       ).pack(side='left', padx=(8, 0))
+            tk.Spinbox(mv_grid, from_=0.1, to=10.0, increment=0.5,
+                    textvariable=self._portal_cost_var, width=5,
+                    format='%.1f',
+                    font=self._fonts['mono'],
+                    bg=COLORS['node_default'], fg=COLORS['text'],
+                    buttonbackground=COLORS['panel_border'],
+                    relief='flat', insertbackground=COLORS['text'],
+                    ).grid(row=1, column=1, sticky='w', padx=(8, 0), pady=2)
 
-            tk.Button(self, text='🌀  GERAR MULTIVERSO',
-                      font=self._fonts['section'],
-                      bg=COLORS['accent2'], fg='#ffffff',
-                      activebackground='#C070FF',
-                      activeforeground='#ffffff',
-                      relief='flat', cursor='hand2',
-                      command=self._fire_regenerate_multiverse, pady=6,
-                      ).pack(padx=16, pady=(4, 4), fill='x')
+            self._gen_mv_btn = tk.Button(self, text='🌀  GERAR MULTIVERSO',
+                                    font=self._fonts['section'],
+                                    bg=COLORS['accent2'], fg='#ffffff',
+                                    activebackground='#C070FF',
+                                    activeforeground='#ffffff',
+                                    relief='flat', cursor='hand2',
+                                    command=self._fire_regenerate_multiverse, pady=6,
+                                    )
+            self._gen_mv_btn.pack(padx=16, pady=(4, 4), fill='x')
+            
+            self._exit_mv_btn = tk.Button(
+                self, text='✕  SAIR DO MULTIVERSO',
+                font=self._fonts['section'],
+                bg=COLORS['node_default'], fg=COLORS['warning'],
+                activebackground=COLORS['panel_border'],
+                activeforeground=COLORS['warning'],
+                relief='flat', cursor='hand2',
+                command=self._fire_exit_multiverse, pady=6,
+            )
 
-        # ── legenda ───────────────────────────────────────────────────────────
-        self._divider()
-        self._section('▸ LEGENDA')
-        for clr, label in [
-            (COLORS['accent'],          'Estado inicial'),
-            (COLORS['success'],         'Estado objetivo'),
-            (COLORS['accent2'],         'Caminho encontrado'),
-            (COLORS['tile_portal_glow'],'Portal de mapa'),
-            (COLORS['text_dim'],        'Estado não visitado'),
-        ]:
-            row = tk.Frame(self, bg=COLORS['panel'])
-            row.pack(anchor='w', padx=16, pady=1)
-            tk.Label(row, text='●', font=self._fonts['label'],
-                     fg=clr, bg=COLORS['panel']).pack(side='left')
-            tk.Label(row, text=label, font=self._fonts['label'],
-                     fg=COLORS['text_dim'], bg=COLORS['panel'],
-                     ).pack(side='left', padx=4)
-
-        self._section('▸ TERRENOS')
-        for clr, label in [
-            (COLORS['tile_free'], 'Planície  (peso 1)'),
-            (COLORS['tile_w2'],   'Floresta  (peso 2)'),
-            (COLORS['tile_w3'],   'Pântano   (peso 3)'),
-            (COLORS['tile_w5'],   'Montanha  (peso 5)'),
-        ]:
-            row = tk.Frame(self, bg=COLORS['panel'])
-            row.pack(anchor='w', padx=16, pady=1)
-            tk.Label(row, text='■', font=self._fonts['label'],
-                     fg=clr, bg=COLORS['panel']).pack(side='left')
-            tk.Label(row, text=label, font=self._fonts['label'],
-                     fg=COLORS['text_dim'], bg=COLORS['panel'],
-                     ).pack(side='left', padx=4)
+            self._divider()
+            tk.Button(self, text='◈  LEGENDA / TERRENOS',
+                    font=self._fonts['section'],
+                    bg=COLORS['panel_border'], fg=COLORS['text_dim'],
+                    activebackground=COLORS['node_default'],
+                    activeforeground=COLORS['text'],
+                    relief='flat', cursor='hand2',
+                    command=self._open_legend, pady=6,
+                    ).pack(padx=16, pady=(0, 4), fill='x')
 
     # ── API pública ──────────────────────────────────────────────────────────
 
@@ -333,6 +322,25 @@ class ControlPanel(tk.Frame):
                 n_maps=self._n_maps_var.get(),
                 portal_cost=self._portal_cost_var.get(),
             )
+            # Revela o botão de saída
+            self._exit_mv_btn.pack(padx=16, pady=(0, 4), fill='x',
+                       after=self._gen_mv_btn)
+
+    def _fire_regenerate(self):
+        """Novo labirinto simples ou multiverso, conforme estado atual."""
+        if config.MULTIVERSE_MODE and self._on_regenerate_multiverse:
+            self._on_regenerate_multiverse(
+                n_maps=self._n_maps_var.get(),
+                portal_cost=self._portal_cost_var.get(),
+            )
+        else:
+            if self._on_regenerate:
+                self._on_regenerate()
+
+    def _fire_exit_multiverse(self):
+        self._exit_mv_btn.pack_forget()
+        if self._on_exit_multiverse:
+            self._on_exit_multiverse()
 
     def _on_state_change(self, *_):
         config.START_NODE = self.start_var.get()
@@ -395,3 +403,69 @@ class ControlPanel(tk.Frame):
                   foreground=[('readonly', COLORS['text'])],
                   selectbackground=[('readonly', COLORS['accent'])],
                   selectforeground=[('readonly', '#ffffff')])
+        
+    def _open_legend(self):
+        win = tk.Toplevel(self)
+        win.title('Legenda')
+        win.configure(bg=COLORS['panel'])
+        win.resizable(False, False)
+
+        def _section(text):
+            tk.Label(win, text=text, font=self._fonts['section'],
+                    bg=COLORS['panel'], fg=COLORS['accent2'],
+                    anchor='w').pack(padx=16, pady=(10, 2), fill='x')
+
+        def _divider():
+            tk.Frame(win, bg=COLORS['panel_border'], height=1).pack(
+                fill='x', padx=12, pady=6)
+
+        _section('▸ LEGENDA')
+        for clr, label in [
+            (COLORS['accent'],           'Estado inicial'),
+            (COLORS['success'],          'Estado objetivo'),
+            (COLORS['accent2'],          'Caminho encontrado'),
+            (COLORS['tile_portal_glow'], 'Portal de mapa'),
+            (COLORS['text_dim'],         'Estado não visitado'),
+        ]:
+            row = tk.Frame(win, bg=COLORS['panel'])
+            row.pack(anchor='w', padx=16, pady=1)
+            tk.Label(row, text='●', font=self._fonts['label'],
+                    fg=clr, bg=COLORS['panel']).pack(side='left')
+            tk.Label(row, text=label, font=self._fonts['label'],
+                    fg=COLORS['text_dim'], bg=COLORS['panel'],
+                    ).pack(side='left', padx=4)
+
+        _divider()
+        _section('▸ TERRENOS')
+        for clr, label in [
+            (COLORS['tile_free'], 'Planície  (peso 1)'),
+            (COLORS['tile_w2'],   'Floresta  (peso 2)'),
+            (COLORS['tile_w3'],   'Pântano   (peso 3)'),
+            (COLORS['tile_w5'],   'Montanha  (peso 5)'),
+        ]:
+            row = tk.Frame(win, bg=COLORS['panel'])
+            row.pack(anchor='w', padx=16, pady=1)
+            tk.Label(row, text='■', font=self._fonts['label'],
+                    fg=clr, bg=COLORS['panel']).pack(side='left')
+            tk.Label(row, text=label, font=self._fonts['label'],
+                    fg=COLORS['text_dim'], bg=COLORS['panel'],
+                    ).pack(side='left', padx=4)
+
+        _divider()
+        tk.Button(win, text='Fechar',
+                font=self._fonts['section'],
+                bg=COLORS['node_default'], fg=COLORS['text_dim'],
+                activebackground=COLORS['panel_border'],
+                relief='flat', cursor='hand2',
+                command=win.destroy, pady=6,
+                ).pack(padx=16, pady=(0, 12), fill='x')
+
+        # Centraliza sobre a janela pai
+        win.update_idletasks()
+        px = self.winfo_toplevel().winfo_x()
+        py = self.winfo_toplevel().winfo_y()
+        pw = self.winfo_toplevel().winfo_width()
+        ph = self.winfo_toplevel().winfo_height()
+        ww = win.winfo_width()
+        wh = win.winfo_height()
+        win.geometry(f'+{px + (pw - ww) // 2}+{py + (ph - wh) // 2}')

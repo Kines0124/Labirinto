@@ -27,11 +27,10 @@ Terrenos e pesos:
   Montanha    |  5   |  10 %
 """
 
-from __future__ import annotations
-
-import random
-from dataclasses import dataclass, field
-from typing import Optional
+from    __future__  import annotations
+import  random
+from    dataclasses import dataclass, field
+from    typing      import Optional
 
 
 # ─────────────────────────────────────────────────────────────────────────────

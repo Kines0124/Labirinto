@@ -188,10 +188,11 @@ GOAL_NODE:      str               = "(14,14)"
 NODE_POSITIONS: dict              = {}
 
 # Multiverso (inicialmente None / desativado)
-MULTIVERSE_MODE: bool = False
-MULTIVERSE            = None
-SUPER_GRAPH:    dict  = {}
-ACTIVE_MAP_ID:  int   = 0
+MULTIVERSE_MODE: bool  = False
+MULTIVERSE             = None
+PORTAL_COST:     float = 1.0
+SUPER_GRAPH:     dict  = {}
+ACTIVE_MAP_ID:   int   = 0
 
 # Geração inicial em modo mapa único
 _apply(generate_kruskal_maze(

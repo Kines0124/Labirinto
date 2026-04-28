@@ -1,6 +1,6 @@
-from collections import deque
+from collections      import deque
 from algorithms.NodeP import NodeP
-from math import sqrt, fabs
+from math             import sqrt, fabs
 
 class buscaP(object):
 #--------------------------------------------------------------------------

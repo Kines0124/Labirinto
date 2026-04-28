@@ -26,15 +26,15 @@ from algorithms.ida_star import search as ida_star_search
 # ── registro: nome do método → função ────────────────────────────────────────
 
 REGISTRY: dict[str, callable] = {
-    'Amplitude (BFS)':                  bfs_search,     # ativo
-    'Profundidade (DFS)':               dfs_search,   # TODO: trocar por dfs_search
-    'Profundidade Limitada':            dls_search,   # TODO: trocar por dls_search
-    'Aprofundamento Iterativo (IDDFS)': iddfs_search,   # TODO: trocar por iddfs_search
-    'Bidirecional':                     bidi_search,   # TODO: trocar por bidi_search
-    'Custo Uniforme (UCS)':             ucs_search,   # TODO: trocar por ucs_search
-    'Greedy Best-First':                greedy_search,   # TODO: trocar por greedy_search
-    'A* (A-estrela)':                   astar_search,   # TODO: trocar por astar_search
-    'AIA* (A* Iterativo)':              ida_star_search   # TODO: trocar por ida_star_search
+    'Amplitude (BFS)':                  bfs_search,     
+    'Profundidade (DFS)':               dfs_search,   
+    'Profundidade Limitada':            dls_search,   
+    'Aprofundamento Iterativo (IDDFS)': iddfs_search,   
+    'Bidirecional':                     bidi_search,   
+    'Custo Uniforme (UCS)':             ucs_search,   
+    'Greedy Best-First':                greedy_search,   
+    'A* (A-estrela)':                   astar_search, 
+    'AIA* (A* Iterativo)':              ida_star_search   
 }
 
 

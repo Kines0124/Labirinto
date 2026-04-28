@@ -13,7 +13,7 @@ perfeitamente admissível (nunca superestima).
 
 import config
 import heapq
-from multiverse import MultiverseResult 
+from   multiverse import MultiverseResult 
 
 
 def calcular_heuristica_dijkstra(goal, graph: dict) -> dict:

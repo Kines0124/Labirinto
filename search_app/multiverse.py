@@ -16,8 +16,8 @@ Regras dos portais
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
-from typing import Optional
+from   dataclasses import dataclass, field
+from   typing      import Optional
 
 from maze_generator import MazeResult, generate_kruskal_maze
 

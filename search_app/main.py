@@ -14,18 +14,17 @@ Novidades
                      visitada naquele mapa.
 """
 
-from algorithms.heuristica import calcular_heuristica_euclidiana
-import webbrowser
-import tkinter as tk
-from tkinter import font
+import  webbrowser
+import  tkinter     as tk
+from    tkinter     import font
 
-import config
-from config import COLORS, WINDOW
-from algorithms import run_search
-from multiverse import generate_multiverse
-from ui.graph_canvas import GraphCanvas
-from ui.control_panel import ControlPanel
-from ui.result_panel import ResultPanel
+import  config
+from    config           import COLORS, WINDOW
+from    algorithms       import run_search
+from    multiverse       import generate_multiverse
+from    ui.graph_canvas  import GraphCanvas
+from    ui.control_panel import ControlPanel
+from    ui.result_panel  import ResultPanel
 
 
 class SearchApp(tk.Tk):
@@ -74,6 +73,7 @@ class SearchApp(tk.Tk):
             on_pick_start=lambda: self.graph_canvas.set_pick_mode('start'),
             on_pick_goal=lambda: self.graph_canvas.set_pick_mode('goal'),
             on_regenerate_multiverse=self._handle_regenerate_multiverse,
+            on_exit_multiverse=self._exit_multiverse,
             fonts=self._fonts,
         )
         self.control.pack(side='left', fill='y', padx=(8, 4), pady=8)
@@ -148,14 +148,10 @@ class SearchApp(tk.Tk):
 
         graph = config.SUPER_GRAPH if config.MULTIVERSE_MODE else config.GRAPH
 
-        # Antes: forçava dijkstra no multiverso, ignorando escolha do usuário
-        # Agora: respeita a escolha, mas troca manhattan→euclidiana no multiverso
-        # (manhattan não faz sentido entre mapas; euclidiana sim)
         if config.MULTIVERSE_MODE and heuristic_name == 'manhattan':
             effective_heuristic = 'euclidiana'
         else:
             effective_heuristic = heuristic_name
-
 
         result = run_search(
             method=method,
@@ -186,15 +182,22 @@ class SearchApp(tk.Tk):
                                    COLORS['danger'])
 
     def _handle_regenerate(self):
-        config.regenerate_maze()
-        config.MULTIVERSE_MODE = False
-        self.graph_canvas.reset_visited()
-        self.control.refresh_states(
-            config.STATES, config.START_NODE, config.GOAL_NODE)
-        self.graph_canvas.render()
-        self.result.clear()
+        if config.MULTIVERSE_MODE and config.MULTIVERSE is not None:
+            # Regera multiverso com os mesmos parâmetros
+            self._handle_regenerate_multiverse(
+                n_maps = config.MULTIVERSE.n_maps,
+                portal_cost = config.PORTAL_COST,
+            )
+        else:
+            config.regenerate_maze()
+            self.graph_canvas.reset_visited()
+            self.control.refresh_states(
+                config.STATES, config.START_NODE, config.GOAL_NODE)
+            self.graph_canvas.render()
+            self.result.clear()
 
     def _handle_regenerate_multiverse(self, n_maps: int, portal_cost: float):
+        config.PORTAL_COST = portal_cost
         self.result.set_status('Gerando multiverso...', COLORS['accent'])
         self.update()
 
@@ -223,6 +226,12 @@ class SearchApp(tk.Tk):
             f'{len(mv.portals)//2} portais.',
             COLORS['success'],
         )
+
+    def _exit_multiverse(self):
+        self.graph_canvas.reset_visited()  
+        config.MULTIVERSE_MODE = False
+        config.MULTIVERSE = None
+        self._handle_regenerate()
 
     def _handle_map_switch(self, new_map_id: int):
         """

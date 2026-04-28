@@ -1,10 +1,10 @@
 class Conversor(object):
 
     def converter_grafo(graph: dict) -> tuple:
+        """Converte o grafo para uso de buscas não ponderadas."""
         nos   = sorted(graph.keys())
         grafo = [[viz for viz, _custo in graph[n]] for n in nos]
         return nos, grafo
-
 
     def calcular_custo(path: list, graph: dict) -> float:
         """Recalcula o custo real do caminho usando os pesos do config."""
@@ -14,6 +14,7 @@ class Conversor(object):
         return total
 
     def converter_grafo_ponderado(graph: dict) -> tuple:
+        """Converte o grafo para uso de buscas ponderadas."""
         nos   = sorted(graph.keys())
-        grafo = [graph[n] for n in nos]  # ja e lista de (estado, custo)
+        grafo = [graph[n] for n in nos]  
         return nos, grafo

@@ -25,9 +25,6 @@ class SearchResult:
     cost : float
         Custo total acumulado do caminho.
 
-    nodes_expanded : int
-        Quantidade de nós expandidos durante a busca.
-
     depth : int
         Profundidade da solução (len(path) - 1).
 
@@ -36,7 +33,6 @@ class SearchResult:
     """
     path:           list[str] = field(default_factory=list)
     cost:           float     = 0.0
-    nodes_expanded: int       = 0
     depth:          int       = 0
 
     @property
@@ -48,6 +44,5 @@ class SearchResult:
         return {
             'path':           self.path,
             'cost':           self.cost,
-            'nodes_expanded': self.nodes_expanded,
             'depth':          self.depth,
         }

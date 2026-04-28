@@ -22,12 +22,12 @@ Novidades em relação à v2
    Nenhum after() de animação é criado; o estado está "congelado".
 """
 
-from __future__ import annotations
-from pathlib import Path
-import tkinter as tk
-import config
-from config import COLORS
-from PIL import Image, ImageTk
+from    __future__  import annotations
+from    pathlib     import Path
+import  tkinter     as tk
+import  config
+from    config      import COLORS
+from    PIL         import Image, ImageTk
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +88,8 @@ class GraphCanvas(tk.Canvas):
         self._on_map_switch  = on_map_switch   # callback(map_id)  — troca automática
         self._animation_on   = animation_on
         self._pick_mode: str | None = None
+        
+        self._render_generation: int = 0
 
         self._tile_imgs:  dict[str, ImageTk.PhotoImage] = {}
         self._tile_pil:   dict[str, Image.Image]        = {}
@@ -95,7 +97,7 @@ class GraphCanvas(tk.Canvas):
 
         self._sprite_frames:    dict[str, list[ImageTk.PhotoImage]] = {}
         self._sprite_frame_idx: dict[str, int]                      = {}
-        self._anim_jobs:        dict[str, str]                       = {}
+        self._anim_jobs:        dict[str, str]                      = {}
 
         self._cached_cell: int | None = None
 
@@ -129,7 +131,11 @@ class GraphCanvas(tk.Canvas):
 
     def reset_visited(self):
         """Limpa o histórico de visitas (novo multiverso / nova busca)."""
-        self._visited_per_map = {}
+        self._cancel_all_anim()  
+        self._visited_per_map  = {}
+        self._anim_full_path   = []
+        self._anim_full_start  = ''
+        self._anim_full_goal   = ''
 
     # ── assets ───────────────────────────────────────────────────────────────
 
@@ -162,13 +168,23 @@ class GraphCanvas(tk.Canvas):
 
         self._sprite_frames    = {}
         self._sprite_frame_idx = {}
+
+        # USADO PRA SPRITES START E GOAL
         for sheet in ('start_down', 'start_up', 'start_left', 'start_right', 'goal'):
             frames = self._load_spritesheet(
-                _ROOT / 'assets' / 'tilesets' / f'{sheet}_sheet.png', cell)
+                _ROOT / 'assets' / 'sprites' / f'{sheet}_sheet.png', cell)
             self._sprite_frames[sheet]    = frames
             self._sprite_frame_idx[sheet] = 0
+
+        # ANIMAÇÃO DE START IDLE
+        idle_frames = self._load_spritesheet(
+            _ROOT / 'assets' / 'sprites' / 'start_idle_sheet.png', cell)
+        self._sprite_frames['start_idle']    = idle_frames
+        self._sprite_frame_idx['start_idle'] = 0
+
+        # ANIMAÇÃO DE FINALIZAÇÃO DO CAMINHO
         end_frames = self._load_spritesheet(
-            _ROOT / 'assets' / 'tilesets' / 'end_sheet.png', cell)
+            _ROOT / 'assets' / 'sprites' / 'end_sheet.png', cell)
         self._sprite_frames['end']    = end_frames
         self._sprite_frame_idx['end'] = 0
 
@@ -177,7 +193,7 @@ class GraphCanvas(tk.Canvas):
         try:
             sheet    = Image.open(path).convert('RGBA')
             n_frames = sheet.width // frame_size
-            method   = Image.LANCZOS if cell <= 32 else Image.NEAREST
+            method   = Image.NEAREST
             frames   = []
             for i in range(n_frames):
                 frame = sheet.crop((i * frame_size, 0, (i + 1) * frame_size, frame_size))
@@ -219,6 +235,7 @@ class GraphCanvas(tk.Canvas):
     # ── cancelamento de animações ─────────────────────────────────────────────
 
     def _cancel_all_anim(self):
+        self._render_generation += 1 
         for job_id in list(self._anim_jobs.values()):
             try:
                 self.after_cancel(job_id)
@@ -229,8 +246,8 @@ class GraphCanvas(tk.Canvas):
     # ── render ───────────────────────────────────────────────────────────────
 
     def render(self, path: list[str] = None,
-               start: str = None, goal: str = None,
-               static: bool = False):
+            start: str = None, goal: str = None,
+            static: bool = False):
         """
         Redesenha o mapa ativo.
 
@@ -259,9 +276,9 @@ class GraphCanvas(tk.Canvas):
             local_path = [n for n in path if _node_map_id(n) == active_id]
             path_set   = {_node_to_rc(n) for n in local_path}
             start_rc   = (_node_to_rc(start)
-                          if _node_map_id(start) == active_id else None)
+                        if _node_map_id(start) == active_id else None)
             goal_rc    = (_node_to_rc(goal)
-                          if _node_map_id(goal)  == active_id else None)
+                        if _node_map_id(goal)  == active_id else None)
         else:
             local_path = path
             path_set   = {_node_to_rc(n) for n in path}
@@ -273,7 +290,7 @@ class GraphCanvas(tk.Canvas):
         if config.MULTIVERSE_MODE and config.MULTIVERSE is not None:
             from multiverse import portal_cells_of_map
             portal_cells = portal_cells_of_map(config.MULTIVERSE,
-                                               config.ACTIVE_MAP_ID)
+                                            config.ACTIVE_MAP_ID)
 
         cw = self.winfo_width()  or 600
         ch = self.winfo_height() or 480
@@ -307,19 +324,17 @@ class GraphCanvas(tk.Canvas):
         use_animation = self._animation_on and local_path and not static
 
         if use_animation:
-            # Animação viva: o engine vai percorrendo nó a nó
+            # Garante que a animação sempre começa no mapa do nó inicial
+            if config.MULTIVERSE_MODE and config.MULTIVERSE is not None:
+                start_map_id = _node_map_id(path[0]) 
+                if start_map_id is not None:
+                    config._apply_active_map(start_map_id)
+
             self._anim_full_path  = path
             self._anim_full_start = start
             self._anim_full_goal  = goal
-            # Encontra o índice de início no path completo para o mapa ativo
-            first_idx = next(
-                (i for i, n in enumerate(path)
-                 if config.MULTIVERSE_MODE
-                 and _node_map_id(n) == config.ACTIVE_MAP_ID
-                 or not config.MULTIVERSE_MODE),
-                0)
-            self._animate_path(path, cell, ox, oy, start, goal,
-                               index=first_idx)
+            self._animate_path(path, cell, ox, oy, start, goal, index=0)
+            
         else:
             # ── Modo estático / navegação manual ─────────────────────────────
             # "visited" = nós deste mapa que já foram percorridos
@@ -352,15 +367,27 @@ class GraphCanvas(tk.Canvas):
             last_visited = visited[-1] if visited else None
             if last_visited and _node_map_id(last_visited) == active_id:
                 lr, lc = _node_to_rc(last_visited)
-                lx1, ly1 = ox + lc * cell, oy + lr * cell
-                sheet = 'start_down'
-                frames = self._sprite_frames.get(sheet, [])
-                if frames:
-                    self.create_image(lx1, ly1, anchor='nw',
-                                      image=frames[self._sprite_frame_idx.get(sheet, 0)],
-                                      tags='sprite_start')
-                    job = self.after(120, lambda: self._tick_sprite('start'))
-                    self._anim_jobs['start'] = job
+                if self._sprite_frames.get('start_idle'):
+                    self._anim_jobs['start'] = None
+                    self._play_sprite_loop(lr, lc, cell, ox, oy,
+                                        sheet='start_idle', tag='sprite_start',
+                                        job_key='start', loop=True,
+                                        generation=self._render_generation)
+            elif start_rc and self._sprite_frames.get('start_idle'):
+                # só cai aqui se não há nenhuma visita registrada
+                self._anim_jobs['start'] = None
+                self._play_sprite_loop(start_rc[0], start_rc[1], cell, ox, oy,
+                                    sheet='start_idle', tag='sprite_start',
+                                    job_key='start', loop=True,
+                                    generation=self._render_generation)
+
+            # goal sempre idle
+            if goal_rc and self._sprite_frames.get('goal'):
+                self._anim_jobs['goal'] = None
+                self._play_sprite_loop(goal_rc[0], goal_rc[1], cell, ox, oy,
+                                    sheet='goal', tag='sprite_goal',
+                                    job_key='goal', loop=True,
+                                    generation=self._render_generation)
 
         if self._on_regenerate:
             self._draw_regen_button()
@@ -465,9 +492,10 @@ class GraphCanvas(tk.Canvas):
                 # Garante que estamos no mapa certo
                 cw = self.winfo_width()  or 600
                 ch = self.winfo_height() or 480
-                cell2 = self._cell_size(cw, ch, config.GRID_ROWS, config.GRID_COLS)
-                ox2, oy2 = self._origin(cw, ch, cell2, config.GRID_ROWS, config.GRID_COLS)
-                self._play_end_animation(gr, gc, cell2, ox2, oy2, frame_idx=0)
+                self._anim_jobs['end'] = None  # reserva a chave
+                self._play_sprite_loop(gr, gc, cell, ox, oy,
+                       sheet='end', tag='sprite_end',
+                       job_key='end', loop=True, generation=self._render_generation)
             return
 
         node   = path[index]
@@ -530,56 +558,44 @@ class GraphCanvas(tk.Canvas):
             self.create_image(x1, y1, anchor='nw',
                               image=frames[self._sprite_frame_idx[sheet_name]],
                               tags='sprite_start')
+            self.tag_raise('regen_btn') 
 
         # Agenda próximo passo
-        job = self.after(100, lambda i=index + 1: self._animate_path(
-            path, cell, ox, oy, start, goal, i))
+        delay = 100
+        job = self.after(delay, lambda: self._animate_path(
+            path, cell, ox, oy, start, goal, index + 1))
         self._anim_jobs['path_walk'] = job
 
-    def _play_end_animation(self, r, c, cell, ox, oy, frame_idx=0):
-        frames = self._sprite_frames.get('end', [])
+    def _play_sprite_loop(self, r, c, cell, ox, oy,
+                      sheet, tag, job_key,
+                      frame_idx=0, loop=True,
+                      generation: int = 0):      
+        # Descarta se a geração mudou
+        if generation != self._render_generation:
+            return
+
+        if job_key not in self._anim_jobs and frame_idx != 0:
+            return
+
+        frames = self._sprite_frames.get(sheet, [])
         if not frames:
             return
         x1, y1 = ox + c * cell, oy + r * cell
-        self.delete('sprite_end')
-        self.create_image(x1, y1, anchor='nw',
-                          image=frames[frame_idx], tags='sprite_end')
-        next_idx = (frame_idx + 1) % len(frames)
-        job = self.after(120, lambda: self._play_end_animation(
-            r, c, cell, ox, oy, next_idx))
-        self._anim_jobs['end'] = job
-
-    def _tick_sprite(self, name: str):
-        """Tick de idle — só anima se o nó pertence ao mapa ativo."""
-        sheet_name = 'start_down' if name == 'start' else name
-        frames = self._sprite_frames.get(sheet_name, [])
-        if not frames:
-            return
-        self._sprite_frame_idx[sheet_name] = (
-            self._sprite_frame_idx.get(sheet_name, 0) + 1
-        ) % len(frames)
-
-        # Descobre a posição do sprite (última visitada do mapa ativo)
-        active_id = config.ACTIVE_MAP_ID if config.MULTIVERSE_MODE else -1
-        visited   = self._visited_per_map.get(active_id, [])
-        if not visited:
-            return
-
-        last = visited[-1]
-        r, c = _node_to_rc(last)
-        cw   = self.winfo_width()  or 600
-        ch   = self.winfo_height() or 480
-        cell = self._cell_size(cw, ch, config.GRID_ROWS, config.GRID_COLS)
-        ox, oy = self._origin(cw, ch, cell, config.GRID_ROWS, config.GRID_COLS)
-        x1, y1 = ox + c * cell, oy + r * cell
-
-        tag = f'sprite_{name}'
         self.delete(tag)
         self.create_image(x1, y1, anchor='nw',
-                          image=frames[self._sprite_frame_idx[sheet_name]],
-                          tags=tag)
-        job = self.after(120, lambda n=name: self._tick_sprite(n))
-        self._anim_jobs[name] = job
+                        image=frames[frame_idx], tags=tag)
+        
+        self.tag_raise('regen_btn')
+
+        next_idx = (frame_idx + 1) % len(frames)
+        if not loop and next_idx == 0:
+            self._anim_jobs.pop(job_key, None)
+            return
+        job = self.after(120, lambda: self._play_sprite_loop(
+            r, c, cell, ox, oy, sheet, tag, job_key,
+            next_idx, loop,
+            generation))                               
+        self._anim_jobs[job_key] = job
 
     # ── Direção do sprite ─────────────────────────────────────────────────────
 
@@ -682,7 +698,7 @@ class GraphCanvas(tk.Canvas):
             ('goal',  COLORS['success'], 'G'),
         ):
             if (role == 'start' and is_start) or (role == 'goal' and is_goal):
-                sheet_name = 'start_down' if role == 'start' else 'goal'
+                sheet_name = 'start_idle' if role == 'start' else 'goal'
                 frames = self._sprite_frames.get(sheet_name, [])
                 if frames:
                     tag = f'sprite_{role}'
@@ -768,7 +784,7 @@ class GraphCanvas(tk.Canvas):
     def _draw_regen_button(self):
         cw = self.winfo_width()  or 600
         ch = self.winfo_height() or 480
-        bw, bh = 190, 32
+        bw, bh = 190, 24
         x1 = cw - bw - 12
         y1 = ch - bh - 12
         x2, y2 = x1 + bw, y1 + bh
@@ -778,7 +794,7 @@ class GraphCanvas(tk.Canvas):
             outline=COLORS['node_glow_start'], width=1,
             tags='regen_btn')
         self.create_text(
-            (x1 + x2) / 2, (y1 + y2) / 2,
+            (x1 + x2) / 2, (y1 + y2 + 8) / 2,
             text='⟳  Novo Labirinto',
             font=self._fonts.get('section'),
             fill='#ffffff',

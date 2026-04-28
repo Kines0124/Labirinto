@@ -11,10 +11,10 @@ Como ativar
    - Substitua:  'AIA* (A* Iterativo)': _stub_search  →  ida_star_search
 """
 
-from search_result import SearchResult
-from algorithms.BuscaP import buscaP
-from algorithms.conversor import Conversor
-import algorithms.heuristica as heuristica
+from   search_result         import SearchResult
+from   algorithms.BuscaP     import buscaP
+from   algorithms.conversor  import Conversor
+import algorithms.heuristica as     heuristica
 
 
 def search(start: str, goal: str, graph: dict,
@@ -36,6 +36,5 @@ def search(start: str, goal: str, graph: dict,
    return SearchResult(
         path=reverso,
         cost=float(custo),
-        nodes_expanded=0,
         depth=len(caminho) - 1
    )
