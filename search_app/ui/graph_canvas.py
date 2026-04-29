@@ -173,17 +173,23 @@ class GraphCanvas(tk.Canvas):
         self._sprite_frame_idx = {}
 
         # USADO PRA SPRITES START E GOAL
-        for sheet in ('start_down', 'start_up', 'start_left', 'start_right', 'goal'):
+        for sheet in ('start_down', 'start_up', 'start_left', 'start_right', 
+                      'goal_down', 'goal_up', 'goal_left', 'goal_right'):
             frames = self._load_spritesheet(
                 _ROOT / 'assets' / 'sprites' / f'{sheet}_sheet.png', cell)
             self._sprite_frames[sheet]    = frames
             self._sprite_frame_idx[sheet] = 0
 
         # ANIMAÇÃO DE START IDLE
-        idle_frames = self._load_spritesheet(
+        start_idle_frames = self._load_spritesheet(
             _ROOT / 'assets' / 'sprites' / 'start_idle_sheet.png', cell)
-        self._sprite_frames['start_idle']    = idle_frames
+        self._sprite_frames['start_idle']    = start_idle_frames
         self._sprite_frame_idx['start_idle'] = 0
+
+        goal_idle_frames = self._load_spritesheet(
+            _ROOT / 'assets' / 'sprites' / 'goal_idle_sheet.png', cell)
+        self._sprite_frames['goal_idle']    = goal_idle_frames
+        self._sprite_frame_idx['goal_idle'] = 0
 
         # ANIMAÇÃO DE FINALIZAÇÃO DO CAMINHO
         end_frames = self._load_spritesheet(
@@ -385,10 +391,10 @@ class GraphCanvas(tk.Canvas):
                                     generation=self._render_generation)
 
             # goal sempre idle
-            if goal_rc and self._sprite_frames.get('goal'):
+            if goal_rc and self._sprite_frames.get('goal_idle'):
                 self._anim_jobs['goal'] = None
                 self._play_sprite_loop(goal_rc[0], goal_rc[1], cell, ox, oy,
-                                    sheet='goal', tag='sprite_goal',
+                                    sheet='goal_idle', tag='sprite_goal',
                                     job_key='goal', loop=True,
                                     generation=self._render_generation)
 
@@ -557,7 +563,7 @@ class GraphCanvas(tk.Canvas):
 
         # Desenha sprite do personagem na posição atual
         x1, y1     = ox + c * cell, oy + r * cell
-        sheet_name = self._start_direction(index, path)
+        sheet_name = self._start_direction(index, path, 'start')
         n_frames   = max(len(self._sprite_frames.get(sheet_name, [1])), 1)
         self._sprite_frame_idx[sheet_name] = (
             self._sprite_frame_idx.get(sheet_name, 0) + 1
@@ -619,8 +625,28 @@ class GraphCanvas(tk.Canvas):
         if done_fwd and done_bwd:
             self.delete('sprite_start')
             self.delete('sprite_goal')
-            meet = fwd[-1]
+
+            # Encontra o último nó visível no mapa ativo
+            active = config.ACTIVE_MAP_ID if config.MULTIVERSE_MODE else None
+            meet = None
+            for node in reversed(fwd):
+                if not config.MULTIVERSE_MODE or _node_map_id(node) == active:
+                    meet = node
+                    break
+
+            if meet is None:
+                # fallback: último nó do bwd visível
+                for node in reversed(bwd):
+                    if not config.MULTIVERSE_MODE or _node_map_id(node) == active:
+                        meet = node
+                        break
+
+            if meet is None:
+                meet = fwd[-1]  # último recurso
+
             gr, gc = _node_to_rc(meet)
+            cw = self.winfo_width() or 600
+            ch = self.winfo_height() or 480
             self._anim_jobs['end'] = None
             self._play_sprite_loop(gr, gc, cell, ox, oy,
                                 sheet='end', tag='sprite_end',
@@ -649,7 +675,7 @@ class GraphCanvas(tk.Canvas):
                                         terrain=(tm[pr][pc] if tm else None),
                                         idx=index - 1, path=fwd)
                 self.delete('sprite_start')
-                sheet  = self._start_direction(index, fwd)
+                sheet  = self._start_direction(index, fwd, 'start')
                 frames = self._sprite_frames.get(sheet, [])
                 if frames:
                     x1, y1 = ox + c * cell, oy + r * cell
@@ -679,7 +705,7 @@ class GraphCanvas(tk.Canvas):
                                         terrain=(tm[pr][pc] if tm else None),
                                         idx=index - 1, path=bwd)
                 self.delete('sprite_goal')
-                sheet  = self._start_direction(index, bwd)
+                sheet  = self._start_direction(index, bwd, 'goal')
                 frames = self._sprite_frames.get(sheet, [])
                 if frames:
                     x1, y1 = ox + c * cell, oy + r * cell
@@ -696,7 +722,7 @@ class GraphCanvas(tk.Canvas):
         
     # ── Direção do sprite ─────────────────────────────────────────────────────
 
-    def _start_direction(self, idx: int, path: list[str]) -> str:
+    def _start_direction(self, idx: int, path: list[str], name : str) -> str:
         def delta(a, b):
             ra, ca = _node_to_rc(a)
             rb, cb = _node_to_rc(b)
@@ -705,11 +731,11 @@ class GraphCanvas(tk.Canvas):
                   if idx < len(path) - 1
                   else delta(path[idx - 1], path[idx]))
         return {
-            (1,  0): 'start_down',
-            (-1, 0): 'start_up',
-            (0, -1): 'start_left',
-            (0,  1): 'start_right',
-        }.get((dr, dc), 'start_down')
+            (1,  0): f'{name}_down',
+            (-1, 0): f'{name}_up',
+            (0, -1): f'{name}_left',
+            (0,  1): f'{name}_right',
+        }.get((dr, dc), f'{name}_down')
 
     def _path_rotation(self, idx: int, path: list[str]) -> float:
         def delta(a, b):
@@ -795,7 +821,7 @@ class GraphCanvas(tk.Canvas):
             ('goal',  COLORS['success'], 'G'),
         ):
             if (role == 'start' and is_start) or (role == 'goal' and is_goal):
-                sheet_name = 'start_idle' if role == 'start' else 'goal'
+                sheet_name = 'start_idle' if role == 'start' else 'goal_idle'
                 frames = self._sprite_frames.get(sheet_name, [])
                 if frames:
                     tag = f'sprite_{role}'
