@@ -2,14 +2,9 @@
 algorithms/bidi.py
 ==================
 Busca Bidirecional.
-
-Como ativar
------------
-1. Implemente a lógica abaixo.
-2. Em algorithms/__init__.py:
-   - Descomente: from algorithms.bidi import search as bidi_search
-   - Substitua:  'Bidirecional': _stub_search  →  bidi_search
 """
+
+
 from algorithms.BuscaNP    import buscaNP
 from algorithms.conversor  import Conversor
 from search_result         import SearchResult

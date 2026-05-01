@@ -2,8 +2,8 @@
 algorithms/bfs.py
 =================
 Busca em Amplitude (BFS).
-Delega para BuscaNP.amplitude_grafo — nenhum código do algoritmo vive aqui.
 """
+
 
 from algorithms.BuscaNP   import buscaNP
 from search_result        import SearchResult

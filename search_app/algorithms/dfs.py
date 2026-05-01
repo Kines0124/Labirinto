@@ -2,13 +2,6 @@
 algorithms/dfs.py
 =================
 Busca em Profundidade (Depth-First Search — DFS).
-
-Como ativar
------------
-1. Implemente a lógica abaixo.
-2. Em algorithms/__init__.py:
-   - Descomente: from algorithms.dfs import search as dfs_search
-   - Substitua:  'Profundidade (DFS)': _stub_search  →  dfs_search
 """
 
 from search_result        import SearchResult

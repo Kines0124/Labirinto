@@ -3,12 +3,10 @@ algorithms/heuristica.py
 ========================
 Calcula a heurística admissível para cada nó do grafo em relação
 a um objetivo escolhido dinamicamente.
-
-Estratégia atual (grafo estático)
-----------------------------------
-Roda Dijkstra a partir do OBJETIVO no grafo invertido.
-O custo real mínimo de cada nó até o objetivo é uma heurística
-perfeitamente admissível (nunca superestima).
+Conta com três métodos:
+- Dijkstra, para maior precisão.
+- Manhattan, para mapa padrão.
+- Euclidiana, para multiverso.
 """
 
 import config
@@ -17,7 +15,9 @@ from   multiverse import MultiverseResult
 
 
 def calcular_heuristica_dijkstra(goal, graph: dict) -> dict:
-
+    """
+    Heurística admissível para busca aprimorada no mapa comum e no multiverso.
+    """
     # monta grafo invertido: aresta A->B vira B->A
     grafo_inv = {n: [] for n in graph}
     for origem, vizinhos in graph.items():
@@ -42,19 +42,8 @@ def calcular_heuristica_dijkstra(goal, graph: dict) -> dict:
 
     return dist
 
-
-def calcular_heuristica_por_nome(nome, goal, graph):
-    # Se o nó usa prefixo de mapa, força Dijkstra
-    if goal.startswith("M") and ":" in goal:
-        return calcular_heuristica_dijkstra(goal, graph)
-    # Comportamento original para mapa único
-    coordenadas = list(graph)
-    if nome == 'dijkstra':
-        return calcular_heuristica_dijkstra(goal, graph)
-    return calcular_heuristica_manhattan(goal, graph, coordenadas)
-
 def calcular_heuristica_por_nome(nome: str, goal: str, graph: dict) -> dict:
-    """Seleciona e retorna a heurística pelo nome ('manhattan' ou 'dijkstra')."""
+    """Seleciona e retorna a heurística pelo nome ('manhattan', 'euclidiana' ou 'dijkstra')."""
     coordenadas = list(graph)
     if nome == 'dijkstra':
         return calcular_heuristica_dijkstra(goal, graph)
@@ -66,6 +55,9 @@ def calcular_heuristica_por_nome(nome: str, goal: str, graph: dict) -> dict:
 
 
 def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list = None) -> dict:
+    """
+    Heurística admissível para busca em grafo comum.
+    """
     def parse_coord(s: str):
         s = s.strip("() ")
         x, y = s.split(",")
@@ -83,17 +75,6 @@ def calcular_heuristica_euclidiana(goal: str, graph: dict,
                                    portal_cost: float = 1.0) -> dict:
     """
     Heurística admissível para busca no supergráfico do multiverso.
-
-    Para cada nó n, estima o custo restante até goal como:
-        h(n) = distância_euclidiana(n, goal_local) + penalidade_de_mapas
-
-    onde:
-        distância_euclidiana  = sqrt((dr)² + (dc)²)  dentro do mesmo mapa
-        penalidade_de_mapas   = |map_id(n) - map_id(goal)| * portal_cost
-
-    A penalidade garante que nós em mapas mais longe do destino recebam
-    um custo estimado maior, sem superestimar (admissibilidade mantida
-    desde que portal_cost ≤ custo real de cruzar um portal).
     """
 
     def parse_node(node: str) -> tuple[int, int, int]:

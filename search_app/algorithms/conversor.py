@@ -1,3 +1,11 @@
+"""
+algorithms/conversor.py
+===================
+Helper para conversões de grafos ponderados e não ponderados.
+Auxiliar para cálculo de custo.
+"""
+
+
 class Conversor(object):
 
     def converter_grafo(graph: dict) -> tuple:

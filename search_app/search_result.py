@@ -2,10 +2,6 @@
 search_result.py
 ================
 Define o tipo de retorno padrão de todos os algoritmos de busca.
-
-Todo algoritmo implementado deve retornar um SearchResult, garantindo
-que a interface gráfica receba sempre os mesmos campos independentemente
-do método utilizado.
 """
 
 from dataclasses import dataclass, field

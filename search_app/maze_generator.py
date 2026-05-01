@@ -1,19 +1,7 @@
 """
 maze_generator.py
 =================
-Geração procedural de labirintos perfeitos usando o algoritmo de Kruskal.
-
-Um labirinto "perfeito" (ou spanning-tree maze) tem as seguintes propriedades:
-  - Existe pelo menos um caminho entre quaisquer dois pontos.
-  - Não há ciclos.
-  - É completamente conectado.
-
-Algoritmo de Kruskal para labirintos:
-  1. Inicia com todas as células isoladas (todas as paredes ativas).
-  2. Gera todas as arestas possíveis entre células vizinhas e as embaralha.
-  3. Para cada aresta (u, v): se u e v pertencem a componentes distintos (Union-Find),
-     remove a parede entre eles e une os componentes.
-  4. Repete até que todas as células pertençam ao mesmo componente.
+Geração procedural de labirintos com base no algoritmo de Kruskal.
 
 Terrenos e pesos:
   Cada célula livre recebe um tipo de terreno com probabilidade configurável.

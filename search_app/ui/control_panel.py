@@ -11,6 +11,11 @@ Integração realizada:
   - set_pick_active() para destacar botão de pick ativo
 """
 
+
+from pathlib import Path
+
+from    PIL import Image, ImageTk
+import  os
 import  tkinter as     tk
 from    tkinter import ttk
 import  config
@@ -58,7 +63,7 @@ class ControlPanel(tk.Frame):
         self._on_regenerate_multiverse = on_regenerate_multiverse
         self._on_exit_multiverse       = on_exit_multiverse
         self._pick_btns: dict[str, tk.Button] = {}
-
+        self._legend_imgs = []
         self._build()
         self._apply_combobox_style()
 
@@ -410,6 +415,18 @@ class ControlPanel(tk.Frame):
         win.configure(bg=COLORS['panel'])
         win.resizable(False, False)
 
+        _ROOT = Path(__file__).parent.parent
+
+        def _load_tileset(filename):
+            path =  _ROOT / 'assets' / 'tilesets' / filename
+            try:
+                img = Image.open(path).resize((32, 32), Image.NEAREST)
+                tk_img = ImageTk.PhotoImage(img)
+                self._legend_imgs.append(tk_img)
+                return tk_img
+            except Exception:
+                return None
+
         def _section(text):
             tk.Label(win, text=text, font=self._fonts['section'],
                     bg=COLORS['panel'], fg=COLORS['accent2'],
@@ -419,37 +436,52 @@ class ControlPanel(tk.Frame):
             tk.Frame(win, bg=COLORS['panel_border'], height=1).pack(
                 fill='x', padx=12, pady=6)
 
-        _section('▸ LEGENDA')
-        for clr, label in [
-            (COLORS['accent'],           'Estado inicial'),
-            (COLORS['success'],          'Estado objetivo'),
-            (COLORS['accent2'],          'Caminho encontrado'),
-            (COLORS['tile_portal_glow'], 'Portal de mapa'),
-            (COLORS['text_dim'],         'Estado não visitado'),
+        _section('▸ ESTADOS E TRANSIÇÕES')
+        for filename, label in [
+            ('start.png',  'Estado inicial'),
+            ('goal.png',   'Estado objetivo'),
+            ('path.png',   'Caminho encontrado'),
+            ('portal.png', 'Portal de mapa'),
         ]:
             row = tk.Frame(win, bg=COLORS['panel'])
-            row.pack(anchor='w', padx=16, pady=1)
-            tk.Label(row, text='●', font=self._fonts['label'],
-                    fg=clr, bg=COLORS['panel']).pack(side='left')
+            row.pack(anchor='w', padx=16, pady=2)
+
+            tk_img = _load_tileset(filename)
+            if tk_img:
+                tk.Label(row, image=tk_img,
+                        bg=COLORS['panel']).pack(side='left')
+            else:
+                tk.Label(row, text='●', font=self._fonts['label'],
+                        fg=COLORS['text_dim'], bg=COLORS['panel']).pack(side='left')
+
             tk.Label(row, text=label, font=self._fonts['label'],
                     fg=COLORS['text_dim'], bg=COLORS['panel'],
-                    ).pack(side='left', padx=4)
+                    ).pack(side='left', padx=8)
 
         _divider()
         _section('▸ TERRENOS')
-        for clr, label in [
-            (COLORS['tile_free'], 'Planície  (peso 1)'),
-            (COLORS['tile_w2'],   'Floresta  (peso 2)'),
-            (COLORS['tile_w3'],   'Pântano   (peso 3)'),
-            (COLORS['tile_w5'],   'Montanha  (peso 5)'),
+        for filename, label in [
+            ('plains.png',   'Planície  (peso 1)'),
+            ('forest.png',   'Floresta  (peso 2)'),
+            ('swamp.png',    'Pântano   (peso 3)'),
+            ('mountain.png', 'Montanha  (peso 5)'),
+            ('wall.png',     'Parede    (bloqueio)'),
         ]:
             row = tk.Frame(win, bg=COLORS['panel'])
-            row.pack(anchor='w', padx=16, pady=1)
-            tk.Label(row, text='■', font=self._fonts['label'],
-                    fg=clr, bg=COLORS['panel']).pack(side='left')
+            row.pack(anchor='w', padx=16, pady=2)
+
+            tk_img = _load_tileset(filename)
+            if tk_img:
+                tk.Label(row, image=tk_img,
+                        bg=COLORS['panel']).pack(side='left')
+            else:
+                # Fallback: quadrado colorido se imagem não carregar
+                tk.Label(row, text='■', font=self._fonts['label'],
+                        fg=COLORS['text_dim'], bg=COLORS['panel']).pack(side='left')
+
             tk.Label(row, text=label, font=self._fonts['label'],
                     fg=COLORS['text_dim'], bg=COLORS['panel'],
-                    ).pack(side='left', padx=4)
+                    ).pack(side='left', padx=8)
 
         _divider()
         tk.Button(win, text='Fechar',
@@ -459,13 +491,13 @@ class ControlPanel(tk.Frame):
                 relief='flat', cursor='hand2',
                 command=win.destroy, pady=6,
                 ).pack(padx=16, pady=(0, 12), fill='x')
-
-        # Centraliza sobre a janela pai
+        
+        win.withdraw()
         win.update_idletasks()
-        px = self.winfo_toplevel().winfo_x()
-        py = self.winfo_toplevel().winfo_y()
-        pw = self.winfo_toplevel().winfo_width()
-        ph = self.winfo_toplevel().winfo_height()
-        ww = win.winfo_width()
-        wh = win.winfo_height()
-        win.geometry(f'+{px + (pw - ww) // 2}+{py + (ph - wh) // 2}')
+        root = self.winfo_toplevel()
+        w = win.winfo_reqwidth() + 80
+        h = win.winfo_reqheight()
+        x = root.winfo_rootx() + (root.winfo_width()  - w) // 2
+        y = root.winfo_rooty() + (root.winfo_height() - h) // 2
+        win.geometry(f'{w}x{h}+{x}+{y}')
+        win.deiconify()

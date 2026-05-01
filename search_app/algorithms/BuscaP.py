@@ -1,3 +1,10 @@
+"""
+algorithms/BuscaP.py
+===================
+Classe contendo algoritmos de busca para grafos ponderados.
+"""
+
+
 from collections      import deque
 from algorithms.NodeP import NodeP
 from math             import sqrt, fabs

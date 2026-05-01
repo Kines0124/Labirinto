@@ -1,3 +1,10 @@
+"""
+algorithms/Node.py
+===================
+Classe para implementação de nós em grafos ponderados.
+"""
+
+
 from algorithms.Node import Node
 
 class NodeP(Node):

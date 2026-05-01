@@ -2,13 +2,6 @@
 algorithms/ida_star.py
 ======================
 AIA* — A* Iterativo (Iterative Deepening A*).
-
-Como ativar
------------
-1. Implemente a lógica abaixo.
-2. Em algorithms/__init__.py:
-   - Descomente: from algorithms.ida_star import search as ida_star_search
-   - Substitua:  'AIA* (A* Iterativo)': _stub_search  →  ida_star_search
 """
 
 from   search_result         import SearchResult

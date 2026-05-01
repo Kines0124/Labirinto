@@ -1,3 +1,10 @@
+"""
+algorithms/BuscaNP.py
+===================
+Classe contendo algoritmos de busca para grafos não ponderados.
+"""
+
+
 from collections     import deque
 from algorithms.Node import Node
 

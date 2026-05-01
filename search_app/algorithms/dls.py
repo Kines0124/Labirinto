@@ -2,13 +2,6 @@
 algorithms/dls.py
 =================
 Busca em Profundidade Limitada (Depth-Limited Search — DLS).
-
-Como ativar
------------
-1. Implemente a lógica abaixo.
-2. Em algorithms/__init__.py:
-   - Descomente: from algorithms.dls import search as dls_search
-   - Substitua:  'Profundidade Limitada': _stub_search  →  dls_search
 """
 
 from search_result        import SearchResult

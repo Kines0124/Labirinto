@@ -2,14 +2,8 @@
 algorithms/astar.py
 ===================
 A* (A-estrela).
-
-Como ativar
------------
-1. Implemente a lógica abaixo.
-2. Em algorithms/__init__.py:
-   - Descomente: from algorithms.astar import search as astar_search
-   - Substitua:  'A* (A-estrela)': _stub_search  →  astar_search
 """
+
 
 from   search_result         import SearchResult
 from   algorithms.BuscaP     import buscaP

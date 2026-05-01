@@ -2,11 +2,8 @@
 algorithms/__init__.py
 ======================
 Registro central dos algoritmos de busca.
-
-Para ativar um algoritmo implementado:
-  1. Descomente o import correspondente abaixo.
-  2. Substitua _stub_search pela função importada no REGISTRY.
 """
+
 
 from search_result import SearchResult
 

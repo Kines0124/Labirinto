@@ -1,22 +1,14 @@
 """
-main.py  —  v3 (travessia automática de portais + rastro fixo)
+main.py
 ==============================================================
 Orquestrador principal da aplicação.
-
-Novidades
----------
-- on_map_switch  →  chamado pelo GraphCanvas quando o personagem cruza
-                    um portal durante a animação. Atualiza config para
-                    o novo mapa SEM cancelar animação nem chamar render().
-- _handle_map_nav →  navegação manual pelas setas usa render(static=True):
-                     exibe o caminho já traçado como rastro fixo, sem
-                     reanimar. O sprite fica em idle na última posição
-                     visitada naquele mapa.
 """
 
 import  webbrowser
 import  tkinter     as tk
 from    tkinter     import font
+from    PIL         import Image, ImageTk
+from    pathlib     import Path
 
 import  config
 from    config           import COLORS, WINDOW
@@ -59,9 +51,20 @@ class SearchApp(tk.Tk):
 
     def _build_ui(self):
         self._build_header()
-
         body = tk.Frame(self, bg=COLORS['bg'])
         body.pack(fill='both', expand=True)
+
+        # DESCOMENTAR PRA PLANO DE FUNDO
+        # try:
+        #     _ROOT = Path(__file__).parent
+        #     self._bg_pil_orig = Image.open(_ROOT / 'assets' / 'tilesets'/ 'caves.png').convert('RGBA')
+        #     self._bg_image    = ImageTk.PhotoImage(
+        #         self._bg_pil_orig.resize((WINDOW['width'], WINDOW['height']), Image.LANCZOS))
+        #     self._bg_label = tk.Label(body, image=self._bg_image, bd=0)
+        #     self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #     body.bind('<Configure>', self._on_body_resize)
+        # except Exception:
+        #     pass
 
         self.control = ControlPanel(
             body,
@@ -87,7 +90,6 @@ class SearchApp(tk.Tk):
 
         self.graph_canvas = GraphCanvas(
             canvas_wrapper,
-            on_regenerate=self._handle_regenerate,
             on_node_picked=self._handle_node_picked,
             on_map_nav=self._handle_map_nav,
             on_map_switch=self._handle_map_switch,   # ← novo
@@ -183,6 +185,14 @@ class SearchApp(tk.Tk):
         else:
             self.result.set_status('✗ Sem caminho encontrado.',
                                    COLORS['danger'])
+
+    def _on_body_resize(self, event):
+        if not hasattr(self, '_bg_pil_orig'):
+            return
+        from PIL import ImageTk
+        self._bg_image = ImageTk.PhotoImage(
+            self._bg_pil_orig.resize((event.width, event.height), Image.NEAREST))
+        self._bg_label.config(image=self._bg_image)
 
     def _handle_regenerate(self):
         if config.MULTIVERSE_MODE and config.MULTIVERSE is not None:
@@ -296,10 +306,12 @@ class SearchApp(tk.Tk):
         win.grab_set()
 
         w, h = 630, 480
+        win.withdraw()
         self.update_idletasks()
         x = self.winfo_x() + (self.winfo_width()  - w) // 2
         y = self.winfo_y() + (self.winfo_height() - h) // 2
         win.geometry(f'{w}x{h}+{x}+{y}')
+        win.deiconify()
 
         font_family = self._fonts['label'].actual()['family']
         base_size   = self._fonts['label'].actual()['size']
@@ -331,6 +343,10 @@ class SearchApp(tk.Tk):
                  bg=COLORS['panel'], fg=COLORS['text'],
                  justify='left', wraplength=550
                  ).pack(pady=10)
+        
+        tk.Label(main_frame, text='\n\nASSETS E TILESETS EM PIXEL ART APRESENTADOS SÃO DA AUTORIA DOS DESENVOLVEDORES',
+                 font=(font_family, base_size, 'bold'),
+                 bg=COLORS['panel'], fg=COLORS['accent']).pack()
 
         tk.Label(main_frame, text='\n\nPara mais informações acesse o repositório: ',
                  font=(font_family, base_size + 2, 'bold'),
