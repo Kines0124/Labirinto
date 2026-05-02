@@ -20,8 +20,10 @@ from    ui.result_panel  import ResultPanel
 
 
 class SearchApp(tk.Tk):
+    """Janela principal da aplicação, orquestra canvas, painéis e callbacks."""
 
     def __init__(self):
+        """Inicializa a janela, fontes, estado interno e constrói a UI."""
         super().__init__()
         self.title(WINDOW['title'])
         self.configure(bg=COLORS['bg'])
@@ -38,6 +40,7 @@ class SearchApp(tk.Tk):
     # ── fontes ────────────────────────────────────────────────────────────────
 
     def _create_fonts(self) -> dict:
+        """Cria e retorna o dicionário de fontes usadas em toda a interface."""
         return {
             'title':   font.Font(family='Courier', size=13, weight='bold'),
             'label':   font.Font(family='Courier', size=9),
@@ -50,6 +53,7 @@ class SearchApp(tk.Tk):
     # ── UI ────────────────────────────────────────────────────────────────────
 
     def _build_ui(self):
+        """Monta o layout principal: cabeçalho, painel de controle, canvas e resultado."""
         self._build_header()
         body = tk.Frame(self, bg=COLORS['bg'])
         body.pack(fill='both', expand=True)
@@ -59,7 +63,7 @@ class SearchApp(tk.Tk):
         #     _ROOT = Path(__file__).parent
         #     self._bg_pil_orig = Image.open(_ROOT / 'assets' / 'tilesets'/ 'caves.png').convert('RGBA')
         #     self._bg_image    = ImageTk.PhotoImage(
-        #         self._bg_pil_orig.resize((WINDOW['width'], WINDOW['height']), Image.LANCZOS))
+        #         self._bg_pil_orig.resize((WINDOW['width'], WINDOW['height']), Image.NEAREST))
         #     self._bg_label = tk.Label(body, image=self._bg_image, bd=0)
         #     self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         #     body.bind('<Configure>', self._on_body_resize)
@@ -106,6 +110,7 @@ class SearchApp(tk.Tk):
         self.result.pack(side='right', fill='y', padx=(4, 8), pady=8)
 
     def _build_header(self):
+        """Constrói a barra superior com título e botões de ação global."""
         header = tk.Frame(self, bg=COLORS['panel'], height=48)
         header.pack(fill='x', side='top')
         header.pack_propagate(False)
@@ -130,6 +135,7 @@ class SearchApp(tk.Tk):
                   ).pack(side='right', padx=4, pady=8)
 
     def _center_window(self):
+        """Centraliza a janela na tela na abertura."""
         self.update_idletasks()
         w, h = WINDOW['width'], WINDOW['height']
         x = (self.winfo_screenwidth()  - w) // 2
@@ -141,7 +147,7 @@ class SearchApp(tk.Tk):
     def _handle_search(self, method: str, start: str,
                     goal: str, depth_limit: int,
                     heuristic_name: str = 'manhattan'):
-        
+        """Executa a busca com os parâmetros fornecidos e atualiza canvas e resultado."""
         config.ACTIVE_METHOD = method 
 
         if start == goal:
@@ -187,6 +193,7 @@ class SearchApp(tk.Tk):
                                    COLORS['danger'])
 
     def _on_body_resize(self, event):
+        """Redimensiona a imagem de fundo ao redimensionar a janela."""
         if not hasattr(self, '_bg_pil_orig'):
             return
         from PIL import ImageTk
@@ -195,8 +202,8 @@ class SearchApp(tk.Tk):
         self._bg_label.config(image=self._bg_image)
 
     def _handle_regenerate(self):
+        """Regera o labirinto simples ou o multiverso conforme o modo ativo."""
         if config.MULTIVERSE_MODE and config.MULTIVERSE is not None:
-            # Regera multiverso com os mesmos parâmetros
             self._handle_regenerate_multiverse(
                 n_maps = config.MULTIVERSE.n_maps,
                 portal_cost = config.PORTAL_COST,
@@ -210,6 +217,7 @@ class SearchApp(tk.Tk):
             self.result.clear()
 
     def _handle_regenerate_multiverse(self, n_maps: int, portal_cost: float):
+        """Gera um novo multiverso e atualiza o estado global e a interface."""
         config.PORTAL_COST = portal_cost
         self.result.set_status('Gerando multiverso...', COLORS['accent'])
         self.update()
@@ -241,29 +249,21 @@ class SearchApp(tk.Tk):
         )
 
     def _exit_multiverse(self):
+        """Sai do modo multiverso e regera um labirinto simples."""
         self.graph_canvas.reset_visited()  
         config.MULTIVERSE_MODE = False
         config.MULTIVERSE = None
         self._handle_regenerate()
 
     def _handle_map_switch(self, new_map_id: int):
-        """
-        Chamado pelo GraphCanvas durante a animação ao cruzar um portal.
-        Atualiza config para o novo mapa SEM interromper a animação.
-        O GraphCanvas já redesenhou os tiles; aqui só atualizamos o estado.
-        """
+        """Atualiza o mapa ativo ao cruzar um portal durante a animação."""
         if not config.MULTIVERSE_MODE or config.MULTIVERSE is None:
             return
         if 0 <= new_map_id < config.MULTIVERSE.n_maps:
             config._apply_active_map(new_map_id)
 
     def _handle_map_nav(self, delta: int):
-        """
-        Navegação manual pelas setas ◀ / ▶.
-        Usa render(static=True): mostra o rastro já traçado como tiles
-        fixos sem reanimar. O sprite aparece em idle na última posição
-        visitada naquele mapa.
-        """
+        """Navega manualmente entre mapas do multiverso pelas setas laterais."""
         if not config.MULTIVERSE_MODE or config.MULTIVERSE is None:
             return
         new_id = config.ACTIVE_MAP_ID + delta
@@ -277,12 +277,14 @@ class SearchApp(tk.Tk):
             )
 
     def _handle_reset(self):
+        """Redesenha o mapa sem caminho mantendo start e goal atuais."""
         start = self.control.start_var.get()
         goal  = self.control.goal_var.get()
         self.graph_canvas.render(start=start, goal=goal)
         self.result.clear()
 
     def _handle_node_picked(self, role: str, node: str):
+        """Registra o nó clicado como start ou goal e redesenha o mapa."""
         self.control.set_pick_active(None)
         if role == 'start':
             self.control.start_var.set(node)
@@ -299,6 +301,7 @@ class SearchApp(tk.Tk):
     # ── Sobre ─────────────────────────────────────────────────────────────────
 
     def _show_about(self):
+        """Abre a janela com informações sobre o projeto."""
         win = tk.Toplevel(self)
         win.title('Sobre')
         win.resizable(False, False)

@@ -9,24 +9,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class SearchResult:
-    """
-    Resultado padronizado de uma busca.
-
-    Atributos
-    ---------
-    path : list[str]
-        Lista de estados do caminho encontrado (vazia se não houver solução).
-        Exemplo: ['A', 'B', 'D', 'G']
-
-    cost : float
-        Custo total acumulado do caminho.
-
-    depth : int
-        Profundidade da solução (len(path) - 1).
-
-    found : bool
-        True se um caminho foi encontrado. Derivado automaticamente de `path`.
-    """
+    """Resultado padronizado de uma busca."""
     path:           list[str] = field(default_factory=list)
     cost:           float     = 0.0
     depth:          int       = 0

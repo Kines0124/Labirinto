@@ -7,6 +7,7 @@ Auxiliar para cálculo de custo.
 
 
 class Conversor(object):
+    """Helper class para conversões e cálculos."""
 
     def converter_grafo(graph: dict) -> tuple:
         """Converte o grafo para uso de buscas não ponderadas."""

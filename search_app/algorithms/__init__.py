@@ -41,6 +41,7 @@ def run_search(method: str, start: str, goal: str,
                graph: dict, heuristic: dict,
                depth_limit: int = 3,
                heuristic_name: str = 'manhattan') -> SearchResult:
+    """Localiza o algoritmo no registro e executa a busca com os parâmetros adequados."""
     fn = REGISTRY.get(method)
     if fn is None:
         print(f'[AVISO] Método "{method}" não encontrado no registro.')

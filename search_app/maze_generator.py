@@ -2,17 +2,6 @@
 maze_generator.py
 =================
 Geração procedural de labirintos com base no algoritmo de Kruskal.
-
-Terrenos e pesos:
-  Cada célula livre recebe um tipo de terreno com probabilidade configurável.
-  Os pesos são usados pelo grafo de busca (UCS, A*, etc.).
-
-  Terreno     | Peso | Probabilidade
-  ------------|------|---------------
-  Planície    |  1   |  50 %
-  Floresta    |  2   |  25 %
-  Pântano     |  3   |  15 %
-  Montanha    |  5   |  10 %
 """
 
 from    __future__  import annotations
@@ -33,10 +22,10 @@ class TerrainType:
 
 
 TERRAINS: list[TerrainType] = [
-    TerrainType("plains",   1.0, 0.50),
-    TerrainType("forest",   2.0, 0.25),
-    TerrainType("swamp",    3.0, 0.15),
-    TerrainType("mountain", 5.0, 0.10),
+    TerrainType("plains",   1.0, 0.50), # 50%
+    TerrainType("forest",   2.0, 0.25), # 25%
+    TerrainType("swamp",    3.0, 0.15), # 15%
+    TerrainType("mountain", 5.0, 0.10), # 10%
 ]
 
 # Validação simples
@@ -61,12 +50,10 @@ def _sample_terrain(rng: random.Random) -> TerrainType:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class UnionFind:
-    """
-    Estrutura Union-Find com compressão de caminho e união por rank.
-    Usada para detectar quais células já estão no mesmo componente.
-    """
+    """Estrutura Union-Find com compressão de caminho e união por rank."""
 
     def __init__(self, n: int):
+        """Método Construtor."""
         self._parent = list(range(n))
         self._rank   = [0] * n
 
@@ -101,17 +88,7 @@ class UnionFind:
 
 @dataclass
 class MazeResult:
-    """
-    Contém todos os dados gerados pelo algoritmo de Kruskal.
-
-    Atributos
-    ---------
-    rows, cols      : dimensões do labirinto lógico
-    grid_map        : grid binário  (0 = livre, 1 = parede)  — 2*rows-1 × 2*cols-1
-    grid_weights    : peso de cada célula (0.0 em paredes)
-    terrain_map     : tipo de terreno de cada célula livre (None em paredes)
-    seed            : semente usada (para reprodução)
-    """
+    """Contém todos os dados gerados pelo algoritmo de Kruskal."""
     rows:         int
     cols:         int
     grid_map:     list[list[int]]
@@ -133,32 +110,11 @@ class MazeResult:
 # Algoritmo principal
 # ─────────────────────────────────────────────────────────────────────────────
 
-def generate_kruskal_maze(
-    rows: int = 8,
-    cols: int = 8,
-    seed: Optional[int] = None,
-) -> MazeResult:
-    """
-    Gera um labirinto usando o algoritmo de Kruskal randomizado.
-
-    O labirinto lógico tem `rows × cols` células. Para representá-lo num grid
-    bidimensional com paredes explícitas, usamos a expansão 2-para-1:
-
-        Grid expandido: (2*rows - 1) × (2*cols - 1)
-
-        Célula lógica (r, c)  →  pixel (2r, 2c)  no grid expandido
-        Parede entre (r,c) e (r,c+1)  →  pixel (2r, 2c+1)
-        Parede entre (r,c) e (r+1,c)  →  pixel (2r+1, 2c)
-
-    Parâmetros
-    ----------
-    rows, cols : dimensões do labirinto lógico (células, não pixels de grid)
-    seed       : semente para reprodução; None gera aleatoriamente
-
-    Retorna
-    -------
-    MazeResult com grid_map, grid_weights, terrain_map e metadados.
-    """
+def generate_kruskal_maze(rows: int = 8,
+                          cols: int = 8,
+                          seed: Optional[int] = None,
+                         ) -> MazeResult:
+    """Gera um labirinto usando o algoritmo de Kruskal randomizado."""
     if seed is None:
         seed = random.randint(0, 2**32 - 1)
     rng = random.Random(seed)
@@ -169,7 +125,6 @@ def generate_kruskal_maze(
     def cell_id(r: int, c: int) -> int:
         return r * cols + c
 
-    # ── 1. Gerar todas as arestas (pares de células vizinhas) ─────────────────
     edges: list[tuple[int, int, int, int]] = []   # (r1, c1, r2, c2)
     for r in range(rows):
         for c in range(cols):
@@ -180,7 +135,6 @@ def generate_kruskal_maze(
 
     rng.shuffle(edges)
 
-    # ── 2. Inicializar grid expandido — tudo parede ───────────────────────────
     G_ROWS = 2 * rows - 1
     G_COLS = 2 * cols - 1
 
@@ -194,7 +148,6 @@ def generate_kruskal_maze(
             grid_map[gr][gc] = 0
             terrain_map[gr][gc] = _sample_terrain(rng)
 
-    # ── 3. Kruskal: processar arestas ─────────────────────────────────────────
     for r1, c1, r2, c2 in edges:
         united = dsu.union(cell_id(r1, c1), cell_id(r2, c2))
         if united or rng.random() < EXTRA_EDGE_PROBABILITY:
@@ -202,7 +155,6 @@ def generate_kruskal_maze(
             grid_map[wr][wc] = 0
             terrain_map[wr][wc] = terrain_map[2 * r2][2 * c2]
 
-    # ── 4. Construir grid de pesos ────────────────────────────────────────────
     grid_weights: list[list[float]] = []
     for r in range(G_ROWS):
         row_w: list[float] = []
@@ -223,29 +175,19 @@ def generate_kruskal_maze(
         seed=seed,
     )
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Conversão para o formato esperado por config.py / _build_graph
 # ─────────────────────────────────────────────────────────────────────────────
 
-def maze_to_config_format(
-    result: MazeResult,
-) -> tuple[list[list[int]], list[list[float]], int, int]:
-    """
-    Converte um MazeResult para as estruturas usadas em config.py.
-
-    Retorna
-    -------
-    (grid_map, grid_weights, grid_rows, grid_cols)
-    Prontos para substituir GRID_MAP, GRID_WEIGHTS, GRID_ROWS, GRID_COLS.
-    """
+def maze_to_config_format(result: MazeResult,
+                         ) -> tuple[list[list[int]], list[list[float]], int, int]:
+    """Converte um MazeResult para as estruturas usadas em config.py."""
     return (
         result.grid_map,
         result.grid_weights,
         result.grid_rows,
         result.grid_cols,
     )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Utilitários de debug / inspeção

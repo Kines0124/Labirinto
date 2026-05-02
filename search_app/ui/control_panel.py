@@ -1,14 +1,7 @@
 """
-ui/control_panel.py  —  MERGED (testes-procedural × modificacoes)
+ui/control_panel.py 
 ==================================================================
 Painel esquerdo da interface: seleção de método, estados e botões.
-
-Integração realizada:
-  - Checkbox de animação do caminho   (branch testes-procedural)
-  - Seção de Multiverso com spinner   (branch modificacoes)
-  - Legenda atualizada com portal     (ambas as branches)
-  - refresh_states() para atualizar comboboxes após troca de mapa
-  - set_pick_active() para destacar botão de pick ativo
 """
 
 
@@ -22,30 +15,19 @@ import  config
 from    config  import COLORS, SEARCH_METHODS
 
 HEURISTIC_METHODS = {'Greedy Best-First', 'A* (A-estrela)', 'AIA* (A* Iterativo)'}
-HEURISTIC_OPTIONS = ['Manhattan', 'Euclidiana (Multiverso)' ,'Dijkstra (apelação)']
+HEURISTIC_OPTIONS_NORMAL     = ['Manhattan', 'Dijkstra (apelação)']
+HEURISTIC_OPTIONS_MULTIVERSE = ['Euclidiana (Multiverso)', 'Dijkstra (apelação)']
 
 
 class ControlPanel(tk.Frame):
-    """
-    Painel de controle lateral esquerdo.
-
-    Callbacks injetados pelo app principal
-    ---------------------------------------
-    on_search(method, start, goal, depth_limit, heuristic_name) → None
-    on_reset()                                                   → None
-    on_regenerate()                                              → None
-    on_clear_path()                                              → None
-    on_clear_result()                                            → None
-    on_pick_start()                                              → None
-    on_pick_goal()                                               → None
-    on_regenerate_multiverse(n_maps, portal_cost)                → None  ← novo
-    """
+    """Painel de controle lateral esquerdo."""
 
     def __init__(self, parent, on_search, on_reset, fonts: dict,
                  on_regenerate=None, on_clear_path=None, on_clear_result=None,
                  on_pick_start=None, on_pick_goal=None,
                  on_regenerate_multiverse=None,
                  on_exit_multiverse=None, **kwargs):
+        """Inicializa o painel, registra callbacks e constrói os widgets."""
 
         super().__init__(parent, bg=COLORS['panel'], width=240,
                          highlightbackground=COLORS['panel_border'],
@@ -70,6 +52,7 @@ class ControlPanel(tk.Frame):
     # ── construção ───────────────────────────────────────────────────────────
 
     def _build(self):
+        """Constrói todos os widgets do painel: método, estados, botões e multiverso."""
         pad = {'padx': 16, 'pady': 4}
 
         # ── método de busca ──────────────────────────────────────────────────
@@ -107,10 +90,10 @@ class ControlPanel(tk.Frame):
         tk.Label(self._heuristic_frame, text='Heurística:',
                  font=self._fonts['section'], bg=COLORS['panel'],
                  fg=COLORS['text_dim']).pack(anchor='w')
-        self.heuristic_var = tk.StringVar(value=HEURISTIC_OPTIONS[0])
+        self.heuristic_var = tk.StringVar(value=HEURISTIC_OPTIONS_NORMAL[0])
         heuristic_cb = ttk.Combobox(self._heuristic_frame,
                                     textvariable=self.heuristic_var,
-                                    values=HEURISTIC_OPTIONS,
+                                    values=HEURISTIC_OPTIONS_NORMAL,
                                     state='readonly',
                                     width=20, font=self._fonts['mono'])
         heuristic_cb.pack(anchor='w')
@@ -240,7 +223,7 @@ class ControlPanel(tk.Frame):
             self._gen_mv_btn = tk.Button(self, text='🌀  GERAR MULTIVERSO',
                                     font=self._fonts['section'],
                                     bg=COLORS['accent2'], fg='#ffffff',
-                                    activebackground='#C070FF',
+                                    activebackground="#FAAB50",
                                     activeforeground='#ffffff',
                                     relief='flat', cursor='hand2',
                                     command=self._fire_regenerate_multiverse, pady=6,
@@ -271,10 +254,7 @@ class ControlPanel(tk.Frame):
 
     def refresh_states(self, states: list[str],
                        start: str, goal: str):
-        """
-        Atualiza os comboboxes de início/fim após geração de novo mapa/multiverso.
-        Chamado por main.py depois de apply_multiverse() ou regenerate_maze().
-        """
+        """Atualiza os comboboxes de início e fim após geração de novo mapa."""
         self._start_cb['values'] = states
         self._goal_cb['values']  = states
         self.start_var.set(start)
@@ -297,16 +277,19 @@ class ControlPanel(tk.Frame):
     # ── eventos ──────────────────────────────────────────────────────────────
 
     def _fire_pick_start(self):
+        """Ativa o modo de seleção de nó inicial e notifica o app."""
         self.set_pick_active('start')
         if self._on_pick_start:
             self._on_pick_start()
 
     def _fire_pick_goal(self):
+        """Ativa o modo de seleção de nó objetivo e notifica o app."""
         self.set_pick_active('goal')
         if self._on_pick_goal:
             self._on_pick_goal()
 
     def _fire_search(self):
+        """Lê os campos e dispara o callback de busca com os parâmetros atuais."""
         mapa = {
             'Dijkstra (apelação)':       'dijkstra',
             'Euclidiana (Multiverso)':   'euclidiana',
@@ -321,7 +304,21 @@ class ControlPanel(tk.Frame):
             heuristic_name=heuristic_name,
         )
 
+    def refresh_heuristics(self):
+        """Filtra as opções de heurística conforme o modo multiverso ativo."""
+        if config.MULTIVERSE_MODE:
+            options  = HEURISTIC_OPTIONS_MULTIVERSE
+        else:
+            options  = HEURISTIC_OPTIONS_NORMAL
+
+        heuristic_cb = self._heuristic_frame.winfo_children()[1]  # o Combobox
+        heuristic_cb['values'] = options
+
+        if self.heuristic_var.get() not in options:
+            self.heuristic_var.set(options[0])
+
     def _fire_regenerate_multiverse(self):
+        """Dispara a geração do multiverso e exibe o botão de saída."""
         if self._on_regenerate_multiverse:
             self._on_regenerate_multiverse(
                 n_maps=self._n_maps_var.get(),
@@ -330,6 +327,7 @@ class ControlPanel(tk.Frame):
             # Revela o botão de saída
             self._exit_mv_btn.pack(padx=16, pady=(0, 4), fill='x',
                        after=self._gen_mv_btn)
+            self.refresh_heuristics() 
 
     def _fire_regenerate(self):
         """Novo labirinto simples ou multiverso, conforme estado atual."""
@@ -343,16 +341,20 @@ class ControlPanel(tk.Frame):
                 self._on_regenerate()
 
     def _fire_exit_multiverse(self):
+        """Oculta o botão de saída e notifica o app para sair do modo multiverso."""
         self._exit_mv_btn.pack_forget()
         if self._on_exit_multiverse:
             self._on_exit_multiverse()
+        self.refresh_heuristics()
 
     def _on_state_change(self, *_):
+        """Atualiza start/goal no config e limpa o resultado ao mudar os comboboxes."""
         config.START_NODE = self.start_var.get()
         config.GOAL_NODE  = self.goal_var.get()
         self._clear()
 
     def _on_method_change(self, _event=None):
+        """Exibe ou oculta os frames de profundidade e heurística conforme o método."""
         self._clear()
         method = self.method_var.get()
 
@@ -375,15 +377,18 @@ class ControlPanel(tk.Frame):
     # ── helpers ──────────────────────────────────────────────────────────────
 
     def _section(self, text: str):
+        """Renderiza um rótulo de seção com estilo de cabeçalho."""
         tk.Label(self, text=text, font=self._fonts['section'],
                  bg=COLORS['panel'], fg=COLORS['accent2'],
                  anchor='w').pack(padx=16, pady=(10, 2), fill='x')
 
     def _divider(self):
+        """Insere uma linha horizontal separadora entre seções."""
         tk.Frame(self, bg=COLORS['panel_border'], height=1).pack(
             fill='x', padx=12, pady=6)
 
     def _clear(self, _event=None):
+        """Limpa o caminho e o resultado exibidos no canvas."""
         if self._on_clear_path:
             self._on_clear_path()
         if self._on_clear_result:
@@ -391,6 +396,7 @@ class ControlPanel(tk.Frame):
 
     @staticmethod
     def _apply_combobox_style():
+        """Aplica o tema visual personalizado aos widgets Combobox do ttk."""
         style = ttk.Style()
         style.theme_use('default')
         style.configure('TCombobox',
@@ -410,6 +416,7 @@ class ControlPanel(tk.Frame):
                   selectforeground=[('readonly', '#ffffff')])
         
     def _open_legend(self):
+        """Abre a janela de legenda com tiles de terrenos e estados."""
         win = tk.Toplevel(self)
         win.title('Legenda')
         win.configure(bg=COLORS['panel'])

@@ -14,10 +14,19 @@ import heapq
 from   multiverse import MultiverseResult 
 
 
+def calcular_heuristica_por_nome(nome: str, goal: str, graph: dict) -> dict:
+    """Seleciona e retorna a heurística pelo nome ('manhattan', 'euclidiana' ou 'dijkstra')."""
+    coordenadas = list(graph)
+    if nome == 'dijkstra':
+        return calcular_heuristica_dijkstra(goal, graph)
+    elif nome == 'euclidiana':
+        portal_cost = config.MULTIVERSE.portals[0].cost if config.MULTIVERSE and config.MULTIVERSE.portals else 1.0
+        return calcular_heuristica_euclidiana(goal, graph, config.MULTIVERSE, portal_cost)
+    else:
+        return calcular_heuristica_manhattan(goal, graph, coordenadas)
+
 def calcular_heuristica_dijkstra(goal, graph: dict) -> dict:
-    """
-    Heurística admissível para busca aprimorada no mapa comum e no multiverso.
-    """
+    """Heurística admissível para busca aprimorada no mapa comum e no multiverso."""
     # monta grafo invertido: aresta A->B vira B->A
     grafo_inv = {n: [] for n in graph}
     for origem, vizinhos in graph.items():
@@ -42,22 +51,8 @@ def calcular_heuristica_dijkstra(goal, graph: dict) -> dict:
 
     return dist
 
-def calcular_heuristica_por_nome(nome: str, goal: str, graph: dict) -> dict:
-    """Seleciona e retorna a heurística pelo nome ('manhattan', 'euclidiana' ou 'dijkstra')."""
-    coordenadas = list(graph)
-    if nome == 'dijkstra':
-        return calcular_heuristica_dijkstra(goal, graph)
-    elif nome == 'euclidiana':
-        portal_cost = config.MULTIVERSE.portals[0].cost if config.MULTIVERSE and config.MULTIVERSE.portals else 1.0
-        return calcular_heuristica_euclidiana(goal, graph, config.MULTIVERSE, portal_cost)
-    else:
-        return calcular_heuristica_manhattan(goal, graph, coordenadas)
-
-
 def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list = None) -> dict:
-    """
-    Heurística admissível para busca em grafo comum.
-    """
+    """Heurística admissível para busca em grafo comum."""
     def parse_coord(s: str):
         s = s.strip("() ")
         x, y = s.split(",")
@@ -73,15 +68,9 @@ def calcular_heuristica_manhattan(goal: str, graph: dict, coordenadas: list = No
 def calcular_heuristica_euclidiana(goal: str, graph: dict,
                                    maps_multiverse: 'MultiverseResult',
                                    portal_cost: float = 1.0) -> dict:
-    """
-    Heurística admissível para busca no supergráfico do multiverso.
-    """
+    """Heurística admissível para busca no supergráfico do multiverso."""
 
     def parse_node(node: str) -> tuple[int, int, int]:
-        """
-        Retorna (map_id, row, col) de um nó no formato 'M2:(3,4)'.
-        Para nós simples '(3,4)' retorna (0, row, col).
-        """
         if ':' in node:
             map_part, coord_part = node.split(':', 1)
             map_id = int(map_part.lstrip('M'))

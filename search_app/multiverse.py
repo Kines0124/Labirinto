@@ -2,15 +2,6 @@
 multiverse.py
 =============
 Gera N labirintos independentes e os conecta via portais bidirecionais.
-
-Regras dos portais
-------------------
-- Um portal em (r, c) do Mapa A leva exatamente a (r, c) do Mapa B.
-- A célula (r, c) deve ser LIVRE nos dois mapas (interseção das células livres).
-- Uma spanning-tree aleatória sobre os N mapas garante que sempre
-  existe caminho do Mapa 0 (início) ao Mapa N-1 (saída real).
-- Portais extras são adicionados após a spanning-tree para criar
-  atalhos que os algoritmos podem ou não usar.
 """
 
 from __future__ import annotations
@@ -58,17 +49,7 @@ def generate_multiverse(
     portal_cost:     float = 1.0,
     seed:            Optional[int] = None,
 ) -> MultiverseResult:
-    """
-    Gera n_maps labirintos e os conecta com portais.
-
-    Parâmetros
-    ----------
-    n_maps          : quantidade de mapas
-    rows, cols      : dimensões lógicas de cada mapa (células, não pixels)
-    portals_per_map : portais extras por mapa além da spanning-tree mínima
-    portal_cost     : custo de atravessar um portal
-    seed            : semente global (None = aleatório)
-    """
+    """Gera n_maps labirintos e os conecta com portais."""
     if seed is None:
         seed = random.randint(0, 2 ** 32 - 1)
     rng = random.Random(seed)

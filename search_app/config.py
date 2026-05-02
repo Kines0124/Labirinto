@@ -7,14 +7,13 @@ Modos de operação
 -----------------
 MULTIVERSE_MODE = False  →  comportamento original (mapa único)
 MULTIVERSE_MODE = True   →  múltiplos mapas conectados por portais
-
-No modo multiverso o grafo de busca é o SUPER_GRAPH, cujos nós têm o
-formato  "M{id}:(r,c)"  em vez de apenas  "(r,c)".
 """
 
-from __future__ import annotations
-from typing import Optional
+from __future__     import annotations
+from typing         import Optional
 from maze_generator import generate_kruskal_maze, maze_to_config_format
+
+import sys
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Parâmetros de geração
@@ -29,10 +28,10 @@ MAZE_SEED: Optional[int] = None   # None = aleatório; ex.: 42 para fixo
 # Construção do grafo (mapa único)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_graph(
-    grid:    list[list[int]],
-    weights: list[list[float]],
-) -> dict[str, list[tuple[str, float]]]:
+def _build_graph( grid:    list[list[int]],
+                  weights: list[list[float]],
+                ) -> dict[str, list[tuple[str, float]]]:
+    """Monta um grafo plano para configuração comum."""
     rows, cols = len(grid), len(grid[0])
     graph: dict[str, list[tuple[str, float]]] = {}
 
@@ -58,12 +57,7 @@ def _build_graph(
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _build_super_graph(mv) -> dict[str, list[tuple[str, float]]]:
-    """
-    Monta um único grafo plano com nós no formato "M{id}:(r,c)".
-
-    Arestas intra-mapa  →  vizinhos normais dentro do mesmo mapa
-    Arestas de portal   →  mesmo (r,c) em mapas diferentes
-    """
+    """Monta um único grafo plano com nós no formato "M{id}:(r,c)"."""
     super_graph: dict[str, list[tuple[str, float]]] = {}
 
     # ── arestas intra-mapa ───────────────────────────────────────────────────
@@ -92,7 +86,6 @@ def _build_super_graph(mv) -> dict[str, list[tuple[str, float]]]:
 
 def _apply(result) -> None:
     """Aplica um MazeResult nos globais deste módulo (modo mapa único)."""
-    import sys
     m = sys.modules[__name__]
     gm, gw, gr, gc = maze_to_config_format(result)
     m.GRID_MAP       = gm
@@ -128,11 +121,7 @@ def regenerate_maze(seed: Optional[int] = None) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _apply_active_map(map_id: int) -> None:
-    """
-    Atualiza GRID_MAP / TERRAIN_MAP / GRAPH para o mapa visualizado.
-    Chamado sempre que o usuário troca de mapa no combobox.
-    """
-    import sys
+    """Atualiza GRID_MAP / TERRAIN_MAP / GRAPH para o mapa visualizado."""
     m = sys.modules[__name__]
     if m.MULTIVERSE is None:
         return
@@ -149,11 +138,7 @@ def _apply_active_map(map_id: int) -> None:
 
 
 def apply_multiverse(mv) -> None:
-    """
-    Ativa o modo multiverso e atualiza todos os globais.
-    Chamado por main.py após generate_multiverse().
-    """
-    import sys
+    """Ativa o modo multiverso e atualiza todos os globais."""
     m = sys.modules[__name__]
     m.MULTIVERSE      = mv
     m.SUPER_GRAPH     = _build_super_graph(mv)
@@ -220,53 +205,54 @@ SEARCH_METHODS: list[str] = [
 ]
 
 COLORS: dict[str, str] = {
-    'bg':              '#1A1C2C',
-    'panel':           '#1A1C2C',
-    'panel_border':    '#2A2D40',
+    'bg':              '#1A2018',   
+    'panel':           '#1A2018',
+    'panel_border':    '#2A3828',   
 
-    'accent':          '#4F8EF7',
-    'accent2':         '#A259FF',
-    'success':         '#3ECFAA',
-    'warning':         '#F7C948',
-    'danger':          '#F75F5F',
+    'accent':          '#4F8EF7',   # azul royal — mantido
+    'accent2':         "#C98C47",  
+    'index':           "#C46FFF",
+    'success':         '#5AB87A',   
+    'warning':         '#D4A840',   
+    'danger':          '#C04848',   
 
-    'text':            '#E8ECF8',
-    'text_dim':        '#8890AA',
+    'text':            '#D8E0C8',   
+    'text_dim':        '#788870',   
 
     # tiles por terreno
-    'tile_free':       '#252838',
-    'tile_w2':         '#1A2010',
-    'tile_w3':         '#1A180A',
-    'tile_w5':         '#251008',
-    'tile_wall':       '#0D0F1A',
-    'tile_border':     '#1E2035',
+    'tile_free':       '#243020',   
+    'tile_w2':         '#1C2C18',  
+    'tile_w3':         '#202818',   
+    'tile_w5':         '#222430',   
+    'tile_wall':       '#141814',   
+    'tile_border':     '#2A3828',   
 
     # tile portal
-    'tile_portal':     '#1A2535',
-    'tile_portal_glow':'#00BFFF',
+    'tile_portal':     '#1A2430',
+    'tile_portal_glow':'#4F8EF7',   # mesmo azul do accent
 
     # texto de peso
-    'weight_normal':   '#3A3E55',
-    'weight_medium':   '#8A7A30',
-    'weight_heavy':    '#6A4A18',
-    'weight_critical': '#8A2020',
+    'weight_normal':   '#384830',
+    'weight_medium':   '#786020',
+    'weight_heavy':    '#584018',
+    'weight_critical': '#782020',
 
     # nós especiais
-    'node_start':      '#1C3A5E',
-    'node_goal':       '#1C3C2E',
-    'node_path':       '#2D2040',
-    'node_default':    '#252838',
+    'node_start':      '#1A2C40',   
+    'node_goal':       '#1E3428',   
+    'node_path':       '#2A3430',   
+    'node_default':    '#243020',
 
-    'node_glow_start': '#4F8EF7',
-    'node_glow_goal':  '#3ECFAA',
-    'node_glow_path':  '#A259FF',
+    'node_glow_start': '#4F8EF7',   
+    'node_glow_goal':  '#5AB87A',   
+    'node_glow_path':  '#A87840',   
 
     # arestas
-    'edge_default':    '#2A2E45',
-    'edge_path':       '#A259FF',
-    'edge_glow':       '#6030A0',
+    'edge_default':    '#2A3828',
+    'edge_path':       '#4F8EF7',
+    'edge_glow':       '#2A5898',
 
-    'grid':            '#151820',
+    'grid':            '#141814',
 }
 
 WINDOW = {
