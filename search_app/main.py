@@ -1,37 +1,29 @@
 """
 main.py
-=======
-Ponto de entrada da aplicação.
-
-Responsabilidade única: instanciar a janela, criar os widgets,
-conectar os callbacks e iniciar o loop de eventos.
-
-Não contém lógica de busca, desenho de grafo nem estilos visuais —
-cada uma dessas responsabilidades vive no módulo correspondente.
+==============================================================
+Orquestrador principal da aplicação.
 """
-import webbrowser
-import tkinter as tk
-from tkinter import font
 
-import webbrowser
-import config
-from config import COLORS, WINDOW
-from algorithms import run_search
-from ui.graph_canvas import GraphCanvas
-from ui.control_panel import ControlPanel
-from ui.result_panel import ResultPanel
+import  webbrowser
+import  tkinter     as tk
+from    tkinter     import font
+from    PIL         import Image, ImageTk
+from    pathlib     import Path
+
+import  config
+from    config           import COLORS, WINDOW
+from    algorithms       import run_search
+from    multiverse       import generate_multiverse
+from    ui.graph_canvas  import GraphCanvas
+from    ui.control_panel import ControlPanel
+from    ui.result_panel  import ResultPanel
 
 
 class SearchApp(tk.Tk):
-    """
-    Orquestrador principal da aplicação.
-
-    Cria os três widgets (ControlPanel, GraphCanvas, ResultPanel),
-    injeta os callbacks e trata os eventos de alto nível
-    (executar busca, limpar).
-    """
+    """Janela principal da aplicação, orquestra canvas, painéis e callbacks."""
 
     def __init__(self):
+        """Inicializa a janela, fontes, estado interno e constrói a UI."""
         super().__init__()
         self.title(WINDOW['title'])
         self.configure(bg=COLORS['bg'])
@@ -39,12 +31,16 @@ class SearchApp(tk.Tk):
         self.minsize(WINDOW['min_width'], WINDOW['min_height'])
 
         self._fonts = self._create_fonts()
+        self._last_path:  list[str] = []
+        self._last_start: str = config.START_NODE
+        self._last_goal:  str = config.GOAL_NODE
         self._build_ui()
         self._center_window()
 
-    # ── criação das fontes ────────────────────────────────────────────────────
+    # ── fontes ────────────────────────────────────────────────────────────────
 
     def _create_fonts(self) -> dict:
+        """Cria e retorna o dicionário de fontes usadas em toda a interface."""
         return {
             'title':   font.Font(family='Courier', size=13, weight='bold'),
             'label':   font.Font(family='Courier', size=9),
@@ -54,15 +50,26 @@ class SearchApp(tk.Tk):
             'node':    font.Font(family='Courier', size=11, weight='bold'),
         }
 
-    # ── construção da UI ─────────────────────────────────────────────────────
+    # ── UI ────────────────────────────────────────────────────────────────────
 
     def _build_ui(self):
+        """Monta o layout principal: cabeçalho, painel de controle, canvas e resultado."""
         self._build_header()
-
         body = tk.Frame(self, bg=COLORS['bg'])
         body.pack(fill='both', expand=True)
 
-        # painel esquerdo
+        # DESCOMENTAR PRA PLANO DE FUNDO
+        # try:
+        #     _ROOT = Path(__file__).parent
+        #     self._bg_pil_orig = Image.open(_ROOT / 'assets' / 'tilesets'/ 'caves.png').convert('RGBA')
+        #     self._bg_image    = ImageTk.PhotoImage(
+        #         self._bg_pil_orig.resize((WINDOW['width'], WINDOW['height']), Image.NEAREST))
+        #     self._bg_label = tk.Label(body, image=self._bg_image, bd=0)
+        #     self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #     body.bind('<Configure>', self._on_body_resize)
+        # except Exception:
+        #     pass
+
         self.control = ControlPanel(
             body,
             on_search=self._handle_search,
@@ -72,11 +79,12 @@ class SearchApp(tk.Tk):
             on_clear_result=lambda: self.result.clear(),
             on_pick_start=lambda: self.graph_canvas.set_pick_mode('start'),
             on_pick_goal=lambda: self.graph_canvas.set_pick_mode('goal'),
+            on_regenerate_multiverse=self._handle_regenerate_multiverse,
+            on_exit_multiverse=self._exit_multiverse,
             fonts=self._fonts,
         )
         self.control.pack(side='left', fill='y', padx=(8, 4), pady=8)
 
-        # canvas central
         canvas_wrapper = tk.Frame(body, bg=COLORS['bg'])
         canvas_wrapper.pack(side='left', fill='both', expand=True, padx=4, pady=8)
         tk.Label(canvas_wrapper, text='LABIRINTO GERADO',
@@ -84,17 +92,25 @@ class SearchApp(tk.Tk):
                  bg=COLORS['bg'], fg=COLORS['text_dim'],
                  anchor='w').pack(padx=4, pady=(4, 0))
 
-        self.graph_canvas = GraphCanvas(canvas_wrapper,
-                                on_regenerate=self._handle_regenerate,
-                                on_node_picked=self._handle_node_picked)
+        self.graph_canvas = GraphCanvas(
+            canvas_wrapper,
+            on_node_picked=self._handle_node_picked,
+            on_map_nav=self._handle_map_nav,
+            on_map_switch=self._handle_map_switch,   # ← novo
+            animation_on=True,
+        )
         self.graph_canvas.set_fonts(self._fonts)
         self.graph_canvas.pack(fill='both', expand=True)
 
-        # painel direito
+        self.control.animate_var.trace_add(
+            'write', lambda *_: self.graph_canvas.set_animate(
+                self.control.animate_var.get()))
+
         self.result = ResultPanel(body, fonts=self._fonts)
         self.result.pack(side='right', fill='y', padx=(4, 8), pady=8)
 
     def _build_header(self):
+        """Constrói a barra superior com título e botões de ação global."""
         header = tk.Frame(self, bg=COLORS['panel'], height=48)
         header.pack(fill='x', side='top')
         header.pack_propagate(False)
@@ -103,58 +119,70 @@ class SearchApp(tk.Tk):
                  bg=COLORS['panel'], fg=COLORS['accent'],
                  ).pack(side='left', padx=20, pady=10)
 
-        btn_style = dict(
-            font=self._fonts['label'],
-            relief='flat', cursor='hand2',
-            padx=14, pady=4,
-            )
+        btn_style = dict(font=self._fonts['label'], relief='flat',
+                         cursor='hand2', padx=14, pady=4)
 
         tk.Button(header, text='✕  Sair',
-            bg=COLORS['panel'], fg=COLORS['text_dim'],
-            activebackground='#c0392b', activeforeground='#ffffff',
-            command=self.destroy,
-            **btn_style,
-            ).pack(side='right', padx=(4, 16), pady=8)
+                  bg=COLORS['panel'], fg=COLORS['text_dim'],
+                  activebackground='#c0392b', activeforeground='#ffffff',
+                  command=self.destroy, **btn_style,
+                  ).pack(side='right', padx=(4, 16), pady=8)
 
         tk.Button(header, text='ℹ  Sobre',
-            bg=COLORS['panel'], fg=COLORS['text_dim'],
-            activebackground=COLORS['accent'], activeforeground='#ffffff',
-            command=self._show_about,
-            **btn_style,
-            ).pack(side='right', padx=4, pady=8)
+                  bg=COLORS['panel'], fg=COLORS['text_dim'],
+                  activebackground=COLORS['accent'], activeforeground='#ffffff',
+                  command=self._show_about, **btn_style,
+                  ).pack(side='right', padx=4, pady=8)
 
     def _center_window(self):
+        """Centraliza a janela na tela na abertura."""
         self.update_idletasks()
         w, h = WINDOW['width'], WINDOW['height']
         x = (self.winfo_screenwidth()  - w) // 2
         y = (self.winfo_screenheight() - h) // 2
         self.geometry(f'{w}x{h}+{x}+{y}')
 
-    # ── callbacks ────────────────────────────────────────────────────────────
+    # ── callbacks ─────────────────────────────────────────────────────────────
 
     def _handle_search(self, method: str, start: str,
-                       goal: str, depth_limit: int,
-                       heuristic_name: str = 'manhattan'):
+                    goal: str, depth_limit: int,
+                    heuristic_name: str = 'manhattan'):
+        """Executa a busca com os parâmetros fornecidos e atualiza canvas e resultado."""
+        config.ACTIVE_METHOD = method 
+
         if start == goal:
-            self.result.set_status('⚠ Estado inicial = objetivo.',
-                                   COLORS['warning'])
+            self.result.set_status('⚠ Estado inicial = objetivo.', COLORS['warning'])
             return
 
         self.result.set_status(f'Executando {method}...', COLORS['accent'])
         self.update()
 
+        graph = config.SUPER_GRAPH if config.MULTIVERSE_MODE else config.GRAPH
+
+        if config.MULTIVERSE_MODE and heuristic_name == 'manhattan':
+            effective_heuristic = 'euclidiana'
+        else:
+            effective_heuristic = heuristic_name
+
         result = run_search(
             method=method,
             start=start,
             goal=goal,
-            graph=config.GRAPH,
-            heuristic=None,
+            graph=graph,
+            heuristic=heuristic_name,
             depth_limit=depth_limit,
-            heuristic_name=heuristic_name,
+            heuristic_name=effective_heuristic,
         )
-        
+
+        # Limpa histórico de visitas antes de iniciar nova animação
+        self.graph_canvas.reset_visited()
+
         self.graph_canvas.render(path=result.path, start=start, goal=goal)
         self.result.update_result(result)
+
+        self._last_path  = result.path
+        self._last_start = start
+        self._last_goal  = goal
 
         if result.found:
             self.result.set_status(
@@ -164,78 +192,100 @@ class SearchApp(tk.Tk):
             self.result.set_status('✗ Sem caminho encontrado.',
                                    COLORS['danger'])
 
-    def _show_about(self):
-        win = tk.Toplevel(self)
-        win.title('Sobre')
-        win.resizable(False, False)
-        win.configure(bg=COLORS['panel'])
-        win.grab_set()
+    def _on_body_resize(self, event):
+        """Redimensiona a imagem de fundo ao redimensionar a janela."""
+        if not hasattr(self, '_bg_pil_orig'):
+            return
+        from PIL import ImageTk
+        self._bg_image = ImageTk.PhotoImage(
+            self._bg_pil_orig.resize((event.width, event.height), Image.NEAREST))
+        self._bg_label.config(image=self._bg_image)
 
-        w, h = 630, 480 
-        self.update_idletasks()
-        x = self.winfo_x() + (self.winfo_width() - w) // 2
-        y = self.winfo_y() + (self.winfo_height() - h) // 2
-        win.geometry(f'{w}x{h}+{x}+{y}')
+    def _handle_regenerate(self):
+        """Regera o labirinto simples ou o multiverso conforme o modo ativo."""
+        if config.MULTIVERSE_MODE and config.MULTIVERSE is not None:
+            self._handle_regenerate_multiverse(
+                n_maps = config.MULTIVERSE.n_maps,
+                portal_cost = config.PORTAL_COST,
+            )
+        else:
+            config.regenerate_maze()
+            self.graph_canvas.reset_visited()
+            self.control.refresh_states(
+                config.STATES, config.START_NODE, config.GOAL_NODE)
+            self.graph_canvas.render()
+            self.result.clear()
 
-        font_family = self._fonts['label'].actual()['family']
-        base_size = self._fonts['label'].actual()['size']
+    def _handle_regenerate_multiverse(self, n_maps: int, portal_cost: float):
+        """Gera um novo multiverso e atualiza o estado global e a interface."""
+        config.PORTAL_COST = portal_cost
+        self.result.set_status('Gerando multiverso...', COLORS['accent'])
+        self.update()
 
-        main_frame = tk.Frame(win, bg=COLORS['panel'])
-        main_frame.pack(expand=True, fill='both', padx=20, pady=10)
+        mv = generate_multiverse(
+            n_maps=n_maps,
+            rows=config.MAZE_LOGICAL_ROWS,
+            cols=config.MAZE_LOGICAL_COLS,
+            portal_cost=portal_cost,
+        )
+        config.apply_multiverse(mv)
 
-        # TÍTULO
-        tk.Label(main_frame, text='◈  Sobre  ◈',
-                font=self._fonts['title'],
-                bg=COLORS['panel'], fg=COLORS['accent']
-                ).pack(pady=(10, 15))
+        self._last_path  = []
+        self._last_start = config.START_NODE
+        self._last_goal  = config.GOAL_NODE
+        self.graph_canvas.reset_visited()
 
-        #  AUTORES
-        tk.Label(main_frame, text="DESENVOLVIDO POR", 
-                font=(font_family, base_size, 'bold'), 
-                bg=COLORS['panel'], fg=COLORS['accent']).pack()
-        
-        tk.Label(main_frame, text="Guilherme Carvalho Alvarenga & Lara Hydalgo Ferreira", 
-                font=(self._fonts['label'], base_size+2, 'bold'),
-                bg=COLORS['panel'], fg=COLORS['text']).pack(pady=(0, 20))
+        self.control.refresh_states(
+            [config.START_NODE, config.GOAL_NODE],
+            config.START_NODE,
+            config.GOAL_NODE,
+        )
+        self.graph_canvas.render()
+        self.result.clear()
+        self.result.set_status(
+            f'✓ Multiverso gerado: {n_maps} mapas, '
+            f'{len(mv.portals)//2} portais.',
+            COLORS['success'],
+        )
 
-        #  DESCRIÇÃO
-        desc_text = ("Visualizador interativo de algoritmos de busca em inteligência artificial. "
-                    "O labirinto é gerado proceduralmente e percorrido por estratégias de busca "
-                    "para comparação de custo e profundidade em tempo real.")
-        
-        tk.Label(main_frame, text=desc_text,
-                font=self._fonts['label'],
-                bg=COLORS['panel'], fg=COLORS['text'],
-                justify='left', wraplength=550 
-                ).pack(pady=10)
+    def _exit_multiverse(self):
+        """Sai do modo multiverso e regera um labirinto simples."""
+        self.graph_canvas.reset_visited()  
+        config.MULTIVERSE_MODE = False
+        config.MULTIVERSE = None
+        self._handle_regenerate()
 
-        #  REPOSITÓRIO
-        tk.Label(main_frame, text="\n\nPara mais informações acesse o repositório: ",
-            font=(font_family, base_size+2, 'bold'),
-            bg=COLORS['panel'], fg=COLORS['accent']
-            ).pack(pady=(15, 0))
-        
-        repo_url = "https://github.com/Kines0124/Labirinto"
-        link_label = tk.Label(main_frame, text=repo_url,
-                            font=(font_family, base_size, 'underline'),
-                            bg=COLORS['panel'], fg="#58a6ff", 
-                            cursor="hand2")
-        link_label.pack(pady=15)
-        link_label.bind("<Button-1>", lambda e: webbrowser.open_new(repo_url))
+    def _handle_map_switch(self, new_map_id: int):
+        """Atualiza o mapa ativo ao cruzar um portal durante a animação."""
+        if not config.MULTIVERSE_MODE or config.MULTIVERSE is None:
+            return
+        if 0 <= new_map_id < config.MULTIVERSE.n_maps:
+            config._apply_active_map(new_map_id)
 
-        #  BOTÃO FECHAR
-        tk.Button(main_frame, text='Fechar',
-                font=self._fonts['label'],
-                bg=COLORS['accent'], fg='#ffffff',
-                activebackground=COLORS['node_glow_start'],
-                relief='flat', cursor='hand2',
-                padx=30, pady=8,
-                command=win.destroy
-                ).pack(side='bottom', pady=20)
+    def _handle_map_nav(self, delta: int):
+        """Navega manualmente entre mapas do multiverso pelas setas laterais."""
+        if not config.MULTIVERSE_MODE or config.MULTIVERSE is None:
+            return
+        new_id = config.ACTIVE_MAP_ID + delta
+        if 0 <= new_id < config.MULTIVERSE.n_maps:
+            config._apply_active_map(new_id)
+            self.graph_canvas.render(
+                path=self._last_path,
+                start=self._last_start,
+                goal=self._last_goal,
+                static=True,            # ← rastro fixo, sem reanimar
+            )
+
+    def _handle_reset(self):
+        """Redesenha o mapa sem caminho mantendo start e goal atuais."""
+        start = self.control.start_var.get()
+        goal  = self.control.goal_var.get()
+        self.graph_canvas.render(start=start, goal=goal)
+        self.result.clear()
 
     def _handle_node_picked(self, role: str, node: str):
-        """Recebe o nó clicado no canvas e atualiza o combobox correspondente."""
-        self.control.set_pick_active(None)  # apaga destaque do botão
+        """Registra o nó clicado como start ou goal e redesenha o mapa."""
+        self.control.set_pick_active(None)
         if role == 'start':
             self.control.start_var.set(node)
             config.START_NODE = node
@@ -248,21 +298,81 @@ class SearchApp(tk.Tk):
         goal  = self.control.goal_var.get()
         self.graph_canvas.render(start=start, goal=goal)
 
-    def _handle_reset(self):
-        start = self.control.start_var.get()
-        goal  = self.control.goal_var.get()
-        self.graph_canvas.render(start=start, goal=goal)
-        self.result.clear()
+    # ── Sobre ─────────────────────────────────────────────────────────────────
 
-    def _handle_regenerate(self):
-        config.regenerate_maze()
-        self.control.start_var.set(config.STATES[0])
-        self.control.goal_var.set(config.STATES[-1])
-        self.graph_canvas.render()
-        self.result.clear()
+    def _show_about(self):
+        """Abre a janela com informações sobre o projeto."""
+        win = tk.Toplevel(self)
+        win.title('Sobre')
+        win.resizable(False, False)
+        win.configure(bg=COLORS['panel'])
+        win.grab_set()
 
+        w, h = 630, 480
+        win.withdraw()
+        self.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width()  - w) // 2
+        y = self.winfo_y() + (self.winfo_height() - h) // 2
+        win.geometry(f'{w}x{h}+{x}+{y}')
+        win.deiconify()
 
-# ─────────────────────────────────────────────────────────────────────────────
+        font_family = self._fonts['label'].actual()['family']
+        base_size   = self._fonts['label'].actual()['size']
+
+        main_frame = tk.Frame(win, bg=COLORS['panel'])
+        main_frame.pack(expand=True, fill='both', padx=20, pady=10)
+
+        tk.Label(main_frame, text='◈  Sobre  ◈',
+                 font=self._fonts['title'],
+                 bg=COLORS['panel'], fg=COLORS['accent']
+                 ).pack(pady=(10, 15))
+
+        tk.Label(main_frame, text='DESENVOLVIDO POR',
+                 font=(font_family, base_size, 'bold'),
+                 bg=COLORS['panel'], fg=COLORS['accent']).pack()
+
+        tk.Label(main_frame,
+                 text='Guilherme Carvalho Alvarenga & Lara Hydalgo Ferreira',
+                 font=(self._fonts['label'], base_size + 2, 'bold'),
+                 bg=COLORS['panel'], fg=COLORS['text']).pack(pady=(0, 20))
+
+        desc_text = (
+            'Visualizador interativo de algoritmos de busca em inteligência artificial. '
+            'O labirinto é gerado proceduralmente e percorrido por estratégias de busca '
+            'para comparação de custo e profundidade em tempo real.'
+        )
+        tk.Label(main_frame, text=desc_text,
+                 font=self._fonts['label'],
+                 bg=COLORS['panel'], fg=COLORS['text'],
+                 justify='left', wraplength=550
+                 ).pack(pady=10)
+        
+        tk.Label(main_frame, text='\n\nASSETS E TILESETS EM PIXEL ART APRESENTADOS SÃO DA AUTORIA DOS DESENVOLVEDORES',
+                 font=(font_family, base_size, 'bold'),
+                 bg=COLORS['panel'], fg=COLORS['accent']).pack()
+
+        tk.Label(main_frame, text='\n\nPara mais informações acesse o repositório: ',
+                 font=(font_family, base_size + 2, 'bold'),
+                 bg=COLORS['panel'], fg=COLORS['accent']
+                 ).pack(pady=(15, 0))
+
+        repo_url = 'https://github.com/Kines0124/Labirinto'
+        link_label = tk.Label(main_frame, text=repo_url,
+                              font=(font_family, base_size, 'underline'),
+                              bg=COLORS['panel'], fg='#58a6ff',
+                              cursor='hand2')
+        link_label.pack(pady=15)
+        link_label.bind('<Button-1>', lambda e: webbrowser.open_new(repo_url))
+
+        tk.Button(main_frame, text='Fechar',
+                  font=self._fonts['label'],
+                  bg=COLORS['accent'], fg='#ffffff',
+                  activebackground=COLORS['node_glow_start'],
+                  relief='flat', cursor='hand2',
+                  padx=30, pady=8,
+                  command=win.destroy
+                  ).pack(side='bottom', pady=20)
+
 
 if __name__ == '__main__':
     app = SearchApp()

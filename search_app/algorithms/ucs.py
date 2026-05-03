@@ -2,18 +2,11 @@
 algorithms/ucs.py
 =================
 Custo Uniforme (Uniform Cost Search — UCS).
-
-Como ativar
------------
-1. Implemente a lógica abaixo.
-2. Em algorithms/__init__.py:
-   - Descomente: from algorithms.ucs import search as ucs_search
-   - Substitua:  'Custo Uniforme (UCS)': _stub_search  →  ucs_search
 """
 
-from search_result import SearchResult
+from search_result        import SearchResult
 from algorithms.conversor import Conversor
-from algorithms.BuscaP import buscaP
+from algorithms.BuscaP    import buscaP
 
 
 def search(start: str, goal: str, graph: dict,
@@ -32,6 +25,5 @@ def search(start: str, goal: str, graph: dict,
    return SearchResult(
       path=reverso,
       cost=float(custo),
-      nodes_expanded=0,
       depth=len(caminho) - 1
    )

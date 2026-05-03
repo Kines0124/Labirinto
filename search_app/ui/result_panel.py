@@ -1,25 +1,20 @@
 """
 ui/result_panel.py
 ==================
-Painel direito da interface: exibição de custo, estatísticas,
-caminho encontrado e barra de status.
-Não conhece algoritmos nem canvas.
+Painel direito da interface: exibição de custo, caminho encontrado e barra de status.
 """
 
-import tkinter as tk
-from tkinter import font as tkfont
-from config import COLORS
-from search_result import SearchResult
+import  tkinter         as tk
+from    tkinter         import font as tkfont
+from    config          import COLORS
+from    search_result   import SearchResult
 
 
 class ResultPanel(tk.Frame):
-    """
-    Painel de resultados lateral direito.
-
-    Atualizado pelo app principal via `update_result()` e `set_status()`.
-    """
+    """Painel lateral direito com custo, caminho encontrado e barra de status."""
 
     def __init__(self, parent, fonts: dict, **kwargs):
+        """Inicializa o painel e constrói os widgets de resultado."""
         super().__init__(parent, bg=COLORS['panel'], width=230,
                          highlightbackground=COLORS['panel_border'],
                          highlightthickness=1, **kwargs)
@@ -30,6 +25,7 @@ class ResultPanel(tk.Frame):
     # ── construção ──────────────────────────────────────────────────────────
 
     def _build(self):
+        """Constrói os widgets de custo, estatísticas, caminho e status."""
         self._section('▸ RESULTADO')
 
         # ── custo total ──
@@ -119,12 +115,14 @@ class ResultPanel(tk.Frame):
         self.set_status('Aguardando execução...', COLORS['text_dim'])
 
     def set_status(self, message: str, color: str = None):
+        """Exibe uma mensagem na barra de status com a cor indicada."""
         color = color or COLORS['text_dim']
         self._status_lbl.config(text=message, fg=color)
 
     # ── helpers ──────────────────────────────────────────────────────────────
 
     def _stat_box(self, parent, label_text: str) -> tk.Label:
+        """Cria e retorna um box de estatística com rótulo e valor."""
         box = tk.Frame(parent, bg=COLORS['node_default'],
                        highlightbackground=COLORS['panel_border'],
                        highlightthickness=1)
@@ -140,10 +138,12 @@ class ResultPanel(tk.Frame):
         return val_lbl
 
     def _section(self, text: str):
+        """Renderiza um rótulo de seção com estilo de cabeçalho."""
         tk.Label(self, text=text, font=self._fonts['section'],
                  bg=COLORS['panel'], fg=COLORS['accent2'],
                  anchor='w').pack(padx=16, pady=(10, 2), fill='x')
 
     def _divider(self):
+        """Insere uma linha horizontal separadora entre seções."""
         tk.Frame(self, bg=COLORS['panel_border'], height=1).pack(
             fill='x', padx=12, pady=6)
