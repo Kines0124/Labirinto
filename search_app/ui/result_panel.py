@@ -1,7 +1,7 @@
 """
 ui/result_panel.py
 ==================
-Painel direito da interface: exibição de custo, caminho encontrado e barra de status.
+Right panel of the interface: displays cost, path found, and status bar.
 """
 
 import  tkinter         as tk

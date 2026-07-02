@@ -1,11 +1,11 @@
 """
 algorithms/bfs.py
 =================
-Busca em Amplitude (BFS).
+Breadth-First Search (BFS).
 """
 
 
-from algorithms.BuscaNP   import buscaNP
+from algorithms.BuscaNP   import UnweightedSearch
 from search_result        import SearchResult
 from algorithms.conversor import Conversor
 
@@ -15,7 +15,7 @@ def search(start: str, goal: str, graph: dict,
 
     nos, grafo = Conversor.converter_grafo(graph)
 
-    caminho = buscaNP().amplitude_grafo(start, goal, nos, grafo)
+    caminho = UnweightedSearch().breadth_first_graph(start, goal, nos, grafo)
 
     if caminho is None:
         return SearchResult()

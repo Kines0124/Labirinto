@@ -1,11 +1,11 @@
 """
 algorithms/iddfs.py
 ===================
-Aprofundamento Iterativo (Iterative Deepening DFS — IDDFS).
+Iterative Deepening DFS (IDDFS).
 """
 
 from search_result        import SearchResult
-from algorithms.BuscaNP   import buscaNP
+from algorithms.BuscaNP   import UnweightedSearch
 from algorithms.conversor import Conversor
 
 
@@ -14,7 +14,7 @@ def search(start: str, goal: str, graph: dict,
 
     nos, grafo = Conversor.converter_grafo(graph)
 
-    caminho = buscaNP().aprof_iterativo_grafo(start, goal, nos, grafo, depth_limit)
+    caminho = UnweightedSearch().iterative_deepening_graph(start, goal, nos, grafo, depth_limit)
 
     if caminho is None:
         return SearchResult()

@@ -1,12 +1,12 @@
 """
 algorithms/astar.py
 ===================
-A* (A-estrela).
+A* (A-star).
 """
 
 
 from   search_result         import SearchResult
-from   algorithms.BuscaP     import buscaP
+from   algorithms.BuscaP     import WeightedSearch
 from   algorithms.conversor  import Conversor
 import algorithms.heuristica as     heuristica
 
@@ -19,7 +19,7 @@ def search(start: str, goal: str, graph: dict,
          heuristica.calcular_heuristica_por_nome(heuristic_name, goal, graph)
 
    nos, grafo = Conversor.converter_grafo_ponderado(graph)
-   resultado = buscaP().a_estrela_grafo(start, goal, nos, grafo, pesos)
+   resultado = WeightedSearch().a_star_graph(start, goal, nos, grafo, pesos)
 
    if resultado is None:
       return SearchResult()

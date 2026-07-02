@@ -1,7 +1,7 @@
 """
 ui/control_panel.py 
 ==================================================================
-Painel esquerdo da interface: seleção de método, estados e botões.
+Left panel of the interface: method selection, states, and buttons.
 """
 
 

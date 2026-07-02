@@ -1,11 +1,11 @@
 """
 algorithms/bidi.py
 ==================
-Busca Bidirecional.
+Bidirectional search.
 """
 
 
-from algorithms.BuscaNP    import buscaNP
+from algorithms.BuscaNP    import UnweightedSearch
 from algorithms.conversor  import Conversor
 from search_result         import SearchResult
 
@@ -15,7 +15,7 @@ def search(start: str, goal: str, graph: dict,
     
    nos, grafo = Conversor.converter_grafo(graph)
 
-   caminho = buscaNP().bidirecional_grafo(start, goal, nos, grafo)
+   caminho = UnweightedSearch().bidirectional_graph(start, goal, nos, grafo)
 
    if caminho is None:
       return SearchResult

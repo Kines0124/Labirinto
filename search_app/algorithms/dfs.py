@@ -1,11 +1,11 @@
 """
 algorithms/dfs.py
 =================
-Busca em Profundidade (Depth-First Search — DFS).
+Depth-First Search (DFS).
 """
 
 from search_result        import SearchResult
-from algorithms.BuscaNP   import buscaNP
+from algorithms.BuscaNP   import UnweightedSearch
 from algorithms.conversor import Conversor
 
 
@@ -14,7 +14,7 @@ def search(start: str, goal: str, graph: dict,
     
     nos, grafo = Conversor.converter_grafo(graph)
 
-    caminho = buscaNP().profundidade_grafo(start, goal, nos, grafo)
+    caminho = UnweightedSearch().depth_first_graph(start, goal, nos, grafo)
 
     if caminho is None:
         return SearchResult()

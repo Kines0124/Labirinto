@@ -1,7 +1,7 @@
 """
 multiverse.py
 =============
-Gera N labirintos independentes e os conecta via portais bidirecionais.
+It generates N independent labyrinths and connects them via bidirectional portals.
 """
 
 from __future__ import annotations

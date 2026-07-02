@@ -1,8 +1,8 @@
 """
 ui/graph_canvas.py
 ==================
-Widget de canvas responsável exclusivamente pela renderização do mapa em grid.
-Renderiza um grid 15x15 com células livres e paredes, conforme mostrado nos tilesets.
+Canvas widget responsible exclusively for rendering the map in grid format.
+Renders a 15x15 grid with free cells and walls, as shown in the tilesets.
 """
 
 

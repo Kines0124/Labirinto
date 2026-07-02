@@ -1,17 +1,17 @@
 """
 algorithms/Node.py
 ===================
-Classe para implementação de nós em grafos não ponderados.
+A class for implementing nodes in unweighted graphs.
 """
 
 
 class Node(object):
 
-    def __init__(self, pai=None, estado=None, v1=None,
-                 anterior=None,  proximo=None):
-        self.pai       = pai
-        self.estado    = estado
+    def __init__(self, parent=None, state=None, v1=None,
+                 previous=None,  next=None):
+        self.parent    = parent
+        self.state     = state
         self.v1        = v1
-        self.anterior  = anterior
-        self.proximo   = proximo
+        self.previous  = previous
+        self.next      = next
 

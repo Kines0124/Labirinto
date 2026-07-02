@@ -1,7 +1,7 @@
 """
 maze_generator.py
 =================
-Geração procedural de labirintos com base no algoritmo de Kruskal.
+Procedural maze generation based on Kruskal's algorithm.
 """
 
 from    __future__  import annotations

@@ -1,7 +1,7 @@
 """
 algorithms/BuscaNP.py
 ===================
-Classe contendo algoritmos de busca para grafos não ponderados.
+Class containing search algorithms for unweighted graphs.
 """
 
 
@@ -11,370 +11,370 @@ from algorithms.Node import Node
 from typing          import Optional
 
 
-# Tipos auxiliares para legibilidade
-NodeId    = str                    # identificador de nó no grafo
-GrafoAdj  = list[list[NodeId]]     # lista de adjacência sem pesos
-Caminho   = list                   # lista de estados (str ou list[int])
-Resultado = Optional[Caminho]
+# Helper types for readability
+NodeId    = str                    # node identifier in the graph
+GraphAdj  = list[list[NodeId]]     # unweighted adjacency list
+Path      = list                   # list of states (str or list[int])
+Result    = Optional[Path]
 
 
-class buscaNP(object):
+class UnweightedSearch(object):
 
 # --------------------------------------------------------------------------
-# SUCESSORES PARA GRAFO
+# GRAPH SUCCESSORS
 # --------------------------------------------------------------------------
-    def sucessores_grafo(self,
-                         ind:   int,
-                         grafo: GrafoAdj,
-                         ordem: int,
+    def graph_successors(self,
+                         index: int,
+                         graph: GraphAdj,
+                         order: int,
                          ) -> list[NodeId]:
-        """Retorna a lista de sucessores do nó de índice *ind* no grafo de
-        adjacência, respeitando a ordem de iteração (1 = normal, -1 = reversa)."""
+        """Returns the list of successors of the node at *index* in the
+        adjacency graph, respecting the iteration order (1 = normal, -1 = reversed)."""
 
-        f: list[NodeId] = []
-        for suc in grafo[ind][::ordem]:
-            f.append(suc)
-        return f
+        result: list[NodeId] = []
+        for successor in graph[index][::order]:
+            result.append(successor)
+        return result
 
 # --------------------------------------------------------------------------
-# EXIBE O CAMINHO ENCONTRADO NA ÁRVORE DE BUSCA (GRAFO e GRID)
+# DISPLAYS THE PATH FOUND IN THE SEARCH TREE (GRAPH and GRID)
 # --------------------------------------------------------------------------
-    def exibirCaminho(self, node: Node) -> Caminho:
-        """Reconstrói o caminho da raiz até *node* seguindo os ponteiros
-        pai e retorna a lista de estados na ordem correta (início → fim)."""
+    def show_path(self, node: Node) -> Path:
+        """Reconstructs the path from the root to *node* by following the
+        parent pointers and returns the list of states in the correct order (start → end)."""
 
-        caminho: Caminho = []
+        path: Path = []
         while node is not None:
-            caminho.append(node.estado)
-            node = node.pai
-        caminho.reverse()
-        return caminho
+            path.append(node.state)
+            node = node.parent
+        path.reverse()
+        return path
 
 # --------------------------------------------------------------------------
-# LOCALIZA NÓS DENTRO DA FILA
+# LOCATES NODES WITHIN THE QUEUE
 # --------------------------------------------------------------------------
-    def localiza_encontro(self,
-                          valor: object,
-                          lista: deque[Node],
+    def find_meeting_node(self,
+                          value: object,
+                          node_list: deque[Node],
                           ) -> Optional[Node]:
-        """Varre *lista* de trás para frente e devolve o primeiro nó cujo
-        estado seja igual a *valor*; usado pela busca bidirecional."""
+        """Scans *node_list* from back to front and returns the first node whose
+        state equals *value*; used by the bidirectional search."""
 
-        for no in reversed(lista):
-            if no.estado == valor:
-                return no
+        for node in reversed(node_list):
+            if node.state == value:
+                return node
 
 # --------------------------------------------------------------------------
-# EXIBE O CAMINHO ENCONTRADO NA ÁRVORE DE BUSCA - BIDIRECIONAL (GRAFO/GRID)
+# DISPLAYS THE PATH FOUND IN THE SEARCH TREE - BIDIRECTIONAL (GRAPH/GRID)
 # --------------------------------------------------------------------------
-    def exibirCaminho_bid(self,
-                          encontro: object,
-                          fila1:    deque[Node],
-                          fila2:    deque[Node],
-                          ) -> Caminho:
-        """Concatena os subcaminhos das duas metades da busca bidirecional:
-        origem → ponto de encontro + ponto de encontro → destino (invertido)."""
+    def show_path_bidirectional(self,
+                                meeting_value: object,
+                                queue1:        deque[Node],
+                                queue2:        deque[Node],
+                                ) -> Path:
+        """Concatenates the subpaths from both halves of the bidirectional
+        search: origin → meeting point + meeting point → destination (reversed)."""
 
-        # nó do lado do início
-        encontro1 = self.localiza_encontro(encontro, fila1)
-        # nó do lado do objetivo
-        encontro2 = self.localiza_encontro(encontro, fila2)
+        # node from the start side
+        meeting_node1 = self.find_meeting_node(meeting_value, queue1)
+        # node from the goal side
+        meeting_node2 = self.find_meeting_node(meeting_value, queue2)
         
-        caminho1 = self.exibirCaminho(encontro1)
-        caminho2 = self.exibirCaminho(encontro2)
+        path1 = self.show_path(meeting_node1)
+        path2 = self.show_path(meeting_node2)
     
-        # Inverte o caminho
-        caminho2 = list(reversed(caminho2[:-1]))
+        # Reverses the path
+        path2 = list(reversed(path2[:-1]))
     
-        return caminho1 + caminho2
+        return path1 + path2
 
 # --------------------------------------------------------------------------
-# BUSCA EM AMPLITUDE - GRAFO
+# BREADTH-FIRST SEARCH - GRAPH
 # --------------------------------------------------------------------------
-    def amplitude_grafo(self,
-                        inicio: NodeId,
-                        fim:    NodeId,
-                        nos:    list[NodeId],
-                        grafo:  GrafoAdj,
-                        ) -> Resultado:
-        """BFS em grafo: explora nós camada a camada garantindo o caminho
-        de menor número de arestas entre *inicio* e *fim*."""
+    def breadth_first_graph(self,
+                            start: NodeId,
+                            goal:  NodeId,
+                            nodes: list[NodeId],
+                            graph: GraphAdj,
+                            ) -> Result:
+        """BFS on graph: explores nodes layer by layer, guaranteeing the path
+        with the fewest edges between *start* and *goal*."""
 
-        # Finaliza se início for igual a objetivo
-        if inicio == fim:
-            return [inicio]
+        # Finishes if start equals goal
+        if start == goal:
+            return [start]
         
-        # Lista para árvore de busca - FILA
-        fila: deque[Node] = deque()
+        # List for the search tree - QUEUE
+        queue: deque[Node] = deque()
     
-        # Inclui início como nó raíz da árvore de busca
-        raiz = Node(None, inicio, 0, None, None)
-        fila.append(raiz)
+        # Adds start as the root node of the search tree
+        root = Node(None, start, 0, None, None)
+        queue.append(root)
     
-        # Marca início como visitado
-        visitado: dict[NodeId, int] = {}
-        visitado[inicio] = 0
+        # Marks start as visited
+        visited: dict[NodeId, int] = {}
+        visited[start] = 0
         
-        # Executa a busca
-        while fila:
-            # Remove o primeiro da FILA
-            atual = fila.popleft()
+        # Runs the search
+        while queue:
+            # Removes the first from the QUEUE
+            current = queue.popleft()
     
-            # Gera sucessores a partir do grafo
-            ind: int = nos.index(atual.estado)
-            filhos = self.sucessores_grafo(ind, grafo, 1)
-            for novo in filhos:
+            # Generates successors from the graph
+            index: int = nodes.index(current.state)
+            children = self.graph_successors(index, graph, 1)
+            for child in children:
                 flag = True
-                if novo in visitado:
-                    if visitado[novo] <= atual.v1 + 1:
+                if child in visited:
+                    if visited[child] <= current.v1 + 1:
                         flag = False
                 if flag:
-                    filho = Node(atual, novo, atual.v1 + 1, None, None)
-                    fila.append(filho)
-                    visitado[novo] = atual.v1 + 1
+                    new_node = Node(current, child, current.v1 + 1, None, None)
+                    queue.append(new_node)
+                    visited[child] = current.v1 + 1
                     
-                    # Verifica se encontrou o objetivo
-                    if novo == fim:
-                        return self.exibirCaminho(filho)
+                    # Checks if the goal was found
+                    if child == goal:
+                        return self.show_path(new_node)
         return None
 
 # --------------------------------------------------------------------------
-# BUSCA EM PROFUNDIDADE - GRAFO
+# DEPTH-FIRST SEARCH - GRAPH
 # --------------------------------------------------------------------------
-    def profundidade_grafo(self,
-                           inicio: NodeId,
-                           fim:    NodeId,
-                           nos:    list[NodeId],
-                           grafo:  GrafoAdj,
-                           ) -> Resultado:
-        """DFS em grafo: explora o ramo mais profundo antes de retroceder,
-        usando uma pilha explícita com controle de visitados."""
+    def depth_first_graph(self,
+                          start: NodeId,
+                          goal:  NodeId,
+                          nodes: list[NodeId],
+                          graph: GraphAdj,
+                          ) -> Result:
+        """DFS on graph: explores the deepest branch before backtracking,
+        using an explicit stack with visited-node tracking."""
 
-        # Finaliza se início for igual a objetivo
-        if inicio == fim:
-            return [inicio]
+        # Finishes if start equals goal
+        if start == goal:
+            return [start]
     
-        # Lista para árvore de busca - PILHA
-        pilha: deque[Node] = deque()
+        # List for the search tree - STACK
+        stack: deque[Node] = deque()
     
-        # Inclui início como nó raíz da árvore de busca
-        raiz = Node(None, inicio, 0, None, None)
-        pilha.append(raiz)
+        # Adds start as the root node of the search tree
+        root = Node(None, start, 0, None, None)
+        stack.append(root)
     
-        # Marca início como visitado
-        visitado: dict[NodeId, int] = {}
-        visitado[inicio] = 0
+        # Marks start as visited
+        visited: dict[NodeId, int] = {}
+        visited[start] = 0
         
-        while pilha:
-            # Remove o último da PILHA
-            atual = pilha.pop()
+        while stack:
+            # Removes the last from the STACK
+            current = stack.pop()
     
-            # Gera sucessores a partir do grafo
-            ind: int = nos.index(atual.estado)
-            filhos = self.sucessores_grafo(ind, grafo, -1)
+            # Generates successors from the graph
+            index: int = nodes.index(current.state)
+            children = self.graph_successors(index, graph, -1)
             
-            for novo in filhos:
+            for child in children:
                 flag = True
-                if novo in visitado:
-                    if visitado[novo] <= atual.v1 + 1:
+                if child in visited:
+                    if visited[child] <= current.v1 + 1:
                         flag = False
                 if flag:
-                    filho = Node(atual, novo, atual.v1 + 1, None, None)
-                    pilha.append(filho)
-                    visitado[novo] = atual.v1 + 1
+                    new_node = Node(current, child, current.v1 + 1, None, None)
+                    stack.append(new_node)
+                    visited[child] = current.v1 + 1
                     
-                    # Verifica se encontrou o objetivo - multiobjetivo
-                    if novo == fim:
-                        return self.exibirCaminho(filho)
+                    # Checks if the goal was found - multi-goal
+                    if child == goal:
+                        return self.show_path(new_node)
         return None
 
 # --------------------------------------------------------------------------
-# BUSCA EM PROFUNDIDADE LIMITADA - GRAFO
+# DEPTH-LIMITED SEARCH - GRAPH
 # --------------------------------------------------------------------------
-    def prof_limitada_grafo(self,
-                            inicio: NodeId,
-                            fim:    NodeId,
-                            nos:    list[NodeId],
-                            grafo:  GrafoAdj,
-                            lim:    int,
-                            ) -> Resultado:
-        """DFS com limite de profundidade em grafo: não expande nós além
-        de *lim* níveis, evitando loops em grafos cíclicos profundos."""
+    def depth_limited_graph(self,
+                            start: NodeId,
+                            goal:  NodeId,
+                            nodes: list[NodeId],
+                            graph: GraphAdj,
+                            limit: int,
+                            ) -> Result:
+        """DFS with a depth limit on graph: does not expand nodes beyond
+        *limit* levels, avoiding loops in deep cyclic graphs."""
 
-        # Finaliza se início for igual a objetivo
-        if inicio == fim:
-            return [inicio]
+        # Finishes if start equals goal
+        if start == goal:
+            return [start]
     
-        # Lista para árvore de busca - PILHA
-        pilha: deque[Node] = deque()
+        # List for the search tree - STACK
+        stack: deque[Node] = deque()
     
-        # Inclui início como nó raíz da árvore de busca
-        raiz = Node(None, inicio, 0, None, None)
-        pilha.append(raiz)
+        # Adds start as the root node of the search tree
+        root = Node(None, start, 0, None, None)
+        stack.append(root)
     
-        # Marca início como visitado
-        visitado: dict[NodeId, int] = {}
-        visitado[inicio] = 0
+        # Marks start as visited
+        visited: dict[NodeId, int] = {}
+        visited[start] = 0
         
-        while pilha:
-            # Remove o último da PILHA
-            atual = pilha.pop()
+        while stack:
+            # Removes the last from the STACK
+            current = stack.pop()
             
-            if atual.v1 < lim:
-                # Gera sucessores a partir do grafo
-                ind: int = nos.index(atual.estado)
-                filhos = self.sucessores_grafo(ind, grafo, -1)
+            if current.v1 < limit:
+                # Generates successors from the graph
+                index: int = nodes.index(current.state)
+                children = self.graph_successors(index, graph, -1)
                 
-                for novo in filhos:
+                for child in children:
                     flag = True
-                    if novo in visitado:
-                        if visitado[novo] <= atual.v1 + 1:
+                    if child in visited:
+                        if visited[child] <= current.v1 + 1:
                             flag = False
                     if flag:
-                        filho = Node(atual, novo, atual.v1 + 1, None, None)
-                        pilha.append(filho)
-                        visitado[novo] = atual.v1 + 1
+                        new_node = Node(current, child, current.v1 + 1, None, None)
+                        stack.append(new_node)
+                        visited[child] = current.v1 + 1
                         
-                        # Verifica se encontrou o objetivo - multiobjetivo
-                        if novo == fim:
-                            return self.exibirCaminho(filho)
+                        # Checks if the goal was found - multi-goal
+                        if child == goal:
+                            return self.show_path(new_node)
         return None
 
 # --------------------------------------------------------------------------
-# BUSCA EM APROFUNDAMENTO ITERATIVO - GRAFO
+# ITERATIVE DEEPENING SEARCH - GRAPH
 # --------------------------------------------------------------------------
-    def aprof_iterativo_grafo(self,
-                              inicio:   NodeId,
-                              fim:      NodeId,
-                              nos:      list[NodeId],
-                              grafo:    GrafoAdj,
-                              lim_max:  int,
-                              ) -> Resultado:
-        """IDDFS em grafo: repete DFS limitada com limite crescente de 1 até
-        *lim_max*, combinando completude do BFS com memória do DFS."""
+    def iterative_deepening_graph(self,
+                                  start:     NodeId,
+                                  goal:      NodeId,
+                                  nodes:     list[NodeId],
+                                  graph:     GraphAdj,
+                                  max_limit: int,
+                                  ) -> Result:
+        """IDDFS on graph: repeats limited DFS with an increasing limit from 1 to
+        *max_limit*, combining BFS's completeness with DFS's memory efficiency."""
 
-        # Finaliza se início for igual a objetivo
-        if inicio == fim:
-            return [inicio]
+        # Finishes if start equals goal
+        if start == goal:
+            return [start]
         
-        for lim in range(1, lim_max):
-            # Lista para árvore de busca - PILHA
-            pilha: deque[Node] = deque()
+        for limit in range(1, max_limit):
+            # List for the search tree - STACK
+            stack: deque[Node] = deque()
         
-            # Inclui início como nó raíz da árvore de busca
-            raiz = Node(None, inicio, 0, None, None)
-            pilha.append(raiz)
+            # Adds start as the root node of the search tree
+            root = Node(None, start, 0, None, None)
+            stack.append(root)
         
-            # Marca início como visitado
-            visitado: dict[NodeId, int] = {}
-            visitado[inicio] = 0
+            # Marks start as visited
+            visited: dict[NodeId, int] = {}
+            visited[start] = 0
             
-            while pilha:
-                # Remove o primeiro da PILHA
-                atual = pilha.pop()
+            while stack:
+                # Removes the first from the STACK
+                current = stack.pop()
                 
-                if atual.v1 < lim:
-                    # Gera sucessores a partir do grafo
-                    ind: int = nos.index(atual.estado)
-                    filhos = self.sucessores_grafo(ind, grafo, -1)
+                if current.v1 < limit:
+                    # Generates successors from the graph
+                    index: int = nodes.index(current.state)
+                    children = self.graph_successors(index, graph, -1)
                     
-                    for novo in filhos:
+                    for child in children:
                         flag = True
-                        if novo in visitado:
-                            if visitado[novo] <= atual.v1 + 1:
+                        if child in visited:
+                            if visited[child] <= current.v1 + 1:
                                flag = False
                         if flag:
-                            filho = Node(atual, novo, atual.v1 + 1, None, None)
-                            pilha.append(filho)
-                            visitado[novo] = atual.v1 + 1
+                            new_node = Node(current, child, current.v1 + 1, None, None)
+                            stack.append(new_node)
+                            visited[child] = current.v1 + 1
                             
-                            # Verifica se encontrou o objetivo
-                            if novo == fim:
-                                return self.exibirCaminho(filho)
+                            # Checks if the goal was found
+                            if child == goal:
+                                return self.show_path(new_node)
         return None
 
 # --------------------------------------------------------------------------
-# BUSCA BIDIRECIONAL - GRAFO
+# BIDIRECTIONAL SEARCH - GRAPH
 # --------------------------------------------------------------------------
-    def bidirecional_grafo(self,
-                           inicio: NodeId,
-                           fim:    NodeId,
-                           nos:    list[NodeId],
-                           grafo:  GrafoAdj,
-                           ) -> Resultado:
-        """BFS bidirecional em grafo: expande simultaneamente a partir da
-        origem e do destino, terminando ao as fronteiras se encontrarem."""
+    def bidirectional_graph(self,
+                            start: NodeId,
+                            goal:  NodeId,
+                            nodes: list[NodeId],
+                            graph: GraphAdj,
+                            ) -> Result:
+        """Bidirectional BFS on graph: expands simultaneously from the
+        origin and the destination, finishing when the frontiers meet."""
 
-        if inicio == fim:
-            return [inicio]
+        if start == goal:
+            return [start]
 
-        # Lista para árvore de busca a partir da origem - FILA
-        fila1: deque[Node] = deque()
+        # List for the search tree from the origin - QUEUE
+        queue1: deque[Node] = deque()
         
-        # Lista para árvore de busca a partir do destino - FILA
-        fila2: deque[Node] = deque()
+        # List for the search tree from the destination - QUEUE
+        queue2: deque[Node] = deque()
         
-        # Inclui início e fim como nó raíz da árvore de busca
-        raiz = Node(None, inicio, 0, None, None)
-        fila1.append(raiz)
+        # Adds start and goal as root nodes of the search tree
+        root = Node(None, start, 0, None, None)
+        queue1.append(root)
         
-        raiz = Node(None, fim, 0, None, None)
-        fila2.append(raiz)
+        root = Node(None, goal, 0, None, None)
+        queue2.append(root)
     
-        # Visitados mapeando estado -> Node (para reconstruir o caminho)
-        visitado1: dict[NodeId, int] = {}
-        visitado1[inicio] = 0
-        visitado2: dict[NodeId, int] = {}
-        visitado2[fim] = 0
-        nivel: int = 0
+        # Visited mapping state -> Node (to reconstruct the path)
+        visited1: dict[NodeId, int] = {}
+        visited1[start] = 0
+        visited2: dict[NodeId, int] = {}
+        visited2[goal] = 0
+        level: int = 0
 
-        while fila1 and fila2:
-            # ****** Executa AMPLITUDE a partir da ORIGEM *******
-            # Quantidade de nós no nível atual
-            nivel = len(fila1)
-            for _ in range(nivel):
-                # Remove o primeiro da FILA
-                atual = fila1.popleft()
+        while queue1 and queue2:
+            # ****** Runs BREADTH-FIRST from the ORIGIN *******
+            # Number of nodes at the current level
+            level = len(queue1)
+            for _ in range(level):
+                # Removes the first from the QUEUE
+                current = queue1.popleft()
 
-                # Gera sucessores
-                ind: int = nos.index(atual.estado)
-                filhos = self.sucessores_grafo(ind, grafo, 1)
+                # Generates successors
+                index: int = nodes.index(current.state)
+                children = self.graph_successors(index, graph, 1)
                 
-                for novo in filhos:
+                for child in children:
                     flag = True
-                    if novo in visitado1:
-                        if visitado1[novo] <= atual.v1 + 1:
+                    if child in visited1:
+                        if visited1[child] <= current.v1 + 1:
                             flag = False
                     if flag:
-                        filho = Node(atual, novo, atual.v1 + 1, None, None)
-                        fila1.append(filho)
-                        visitado1[novo] = atual.v1 + 1
+                        new_node = Node(current, child, current.v1 + 1, None, None)
+                        queue1.append(new_node)
+                        visited1[child] = current.v1 + 1
 
-                        if novo in visitado2:
-                            return self.exibirCaminho_bid(novo, fila1, fila2)
+                        if child in visited2:
+                            return self.show_path_bidirectional(child, queue1, queue2)
             
-            # ****** Executa AMPLITUDE a partir do OBJETIVO *******
-            # Quantidade de nós no nível atual
-            nivel = len(fila2)
-            for _ in range(nivel):
-                # Remove o primeiro da FILA
-                atual = fila2.popleft()
+            # ****** Runs BREADTH-FIRST from the GOAL *******
+            # Number of nodes at the current level
+            level = len(queue2)
+            for _ in range(level):
+                # Removes the first from the QUEUE
+                current = queue2.popleft()
 
-                # Gera sucessores
-                ind = nos.index(atual.estado)
-                filhos = self.sucessores_grafo(ind, grafo, 1)
+                # Generates successors
+                index = nodes.index(current.state)
+                children = self.graph_successors(index, graph, 1)
                             
-                for novo in filhos:
+                for child in children:
                     flag = True
-                    if novo in visitado2:
-                        if visitado2[novo] <= atual.v1 + 1:
+                    if child in visited2:
+                        if visited2[child] <= current.v1 + 1:
                             flag = False
                     if flag:
-                        filho = Node(atual, novo, atual.v1 + 1, None, None)
-                        fila2.append(filho)
-                        visitado2[novo] = atual.v1 + 1
+                        new_node = Node(current, child, current.v1 + 1, None, None)
+                        queue2.append(new_node)
+                        visited2[child] = current.v1 + 1
                         
-                        if novo in visitado1:
-                            return self.exibirCaminho_bid(novo, fila1, fila2)
+                        if child in visited1:
+                            return self.show_path_bidirectional(child, queue1, queue2)
                         
         return None

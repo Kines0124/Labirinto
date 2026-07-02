@@ -1,12 +1,12 @@
 """
 algorithms/ucs.py
 =================
-Custo Uniforme (Uniform Cost Search — UCS).
+Uniform Cost Search (UCS).
 """
 
 from search_result        import SearchResult
 from algorithms.conversor import Conversor
-from algorithms.BuscaP    import buscaP
+from algorithms.BuscaP    import WeightedSearch
 
 
 def search(start: str, goal: str, graph: dict,
@@ -14,7 +14,7 @@ def search(start: str, goal: str, graph: dict,
    
    nos, grafo = Conversor.converter_grafo_ponderado(graph)
 
-   resultado = buscaP().custo_uniforme_grafo(start, goal, nos, grafo)
+   resultado = WeightedSearch().uniform_cost_graph(start, goal, nos, grafo)
 
    if resultado is None:
       return SearchResult()

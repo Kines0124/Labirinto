@@ -1,7 +1,7 @@
 """
 main.py
 ==============================================================
-Orquestrador principal da aplicação.
+Main orchestrator of the application.
 """
 
 import  webbrowser

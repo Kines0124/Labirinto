@@ -1,8 +1,8 @@
 """
 algorithms/conversor.py
 ===================
-Helper para conversões de grafos ponderados e não ponderados.
-Auxiliar para cálculo de custo.
+Helper for weighted and unweighted graph conversions.
+Helper for cost calculation.
 """
 
 

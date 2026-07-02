@@ -1,12 +1,11 @@
 """
 algorithms/heuristica.py
 ========================
-Calcula a heurística admissível para cada nó do grafo em relação
-a um objetivo escolhido dinamicamente.
-Conta com três métodos:
-- Dijkstra, para maior precisão.
-- Manhattan, para mapa padrão.
-- Euclidiana, para multiverso.
+Calculates the admissible heuristic for each node in the graph with respect to a dynamically chosen goal.
+It uses three methods:
+- Dijkstra, for greater precision.
+- Manhattan, for standard map.
+- Euclidean, for multiverse.
 """
 
 import config

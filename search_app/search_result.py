@@ -1,7 +1,7 @@
 """
 search_result.py
 ================
-Define o tipo de retorno padrão de todos os algoritmos de busca.
+Defines the default return type for all search algorithms.
 """
 
 from dataclasses import dataclass, field

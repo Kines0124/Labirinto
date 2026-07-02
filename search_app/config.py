@@ -1,12 +1,13 @@
 """
 config.py
 =========
-Centraliza toda a configuração do problema e da interface.
 
-Modos de operação
+Centralizes all problem and interface configuration.
+
+Operating Modes
 -----------------
-MULTIVERSE_MODE = False  →  comportamento original (mapa único)
-MULTIVERSE_MODE = True   →  múltiplos mapas conectados por portais
+MULTIVERSE_MODE = False → original behavior (single map)
+MULTIVERSE_MODE = True → multiple maps connected by portals
 """
 
 from __future__     import annotations
