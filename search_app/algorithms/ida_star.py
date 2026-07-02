@@ -18,7 +18,7 @@ def search(start: str, goal: str, graph: dict,
          heuristica.calcular_heuristica_por_nome(heuristic_name, goal, graph)
 
    nos, grafo = Conversor.converter_grafo_ponderado(graph)
-   resultado = buscaP().aia_estrela_grafo(start, goal, nos, grafo, pesos)
+   resultado  = buscaP().aia_estrela_grafo(start, goal, nos, grafo, pesos)
 
    if resultado is None:
       return SearchResult()

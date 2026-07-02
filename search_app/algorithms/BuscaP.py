@@ -38,66 +38,6 @@ class buscaP(object):
         return f
 
 # --------------------------------------------------------------------------
-# SUCESSORES PARA GRID
-# --------------------------------------------------------------------------
-    def sucessores_grid(self,
-                        st:   list[int],
-                        nx:   int,
-                        ny:   int,
-                        mapa: list[list[int]],
-                        ) -> list[list]:
-        """Retorna os vizinhos válidos (direita, esquerda, abaixo, acima)
-        de uma célula *st* em um grid, com os custos direcionais fixos."""
-
-        f: list[list] = []
-        x, y = st[0], st[1]
-        # DIREITA
-        if y+1<ny:
-            if mapa[x][y+1]==0:
-                suc = []
-                suc.append(x)
-                suc.append(y+1)
-                custo = 5
-                aux = []
-                aux.append(suc)
-                aux.append(custo)
-                f.append(aux)
-        # ESQUERDA
-        if y-1>=0:
-            if mapa[x][y-1]==0:
-                suc = []
-                suc.append(x)
-                suc.append(y-1)
-                custo = 7
-                aux = []
-                aux.append(suc)
-                aux.append(custo)
-                f.append(aux)
-        # ABAIXO
-        if x+1<nx:
-            if mapa[x+1][y]==0:
-                suc = []
-                suc.append(x+1)
-                suc.append(y)
-                custo = 2
-                aux = []
-                aux.append(suc)
-                aux.append(custo)
-                f.append(aux)
-        # ACIMA
-        if x-1>=0:
-            if mapa[x-1][y]==0:
-                suc = []
-                suc.append(x-1)
-                suc.append(y)
-                custo = 3
-                aux = []
-                aux.append(suc)
-                aux.append(custo)
-                f.append(aux)
-        return f
-
-# --------------------------------------------------------------------------
 # INSERE NA LISTA MANTENDO-A ORDENADA
 # --------------------------------------------------------------------------
     def inserir_ordenado(self,
@@ -140,80 +80,6 @@ class buscaP(object):
         sobrescrito ou substituído por uma heurística admissível real."""
         return
 
-# --------------------------------------------------------------------------
-# GERA H - GRID
-# --------------------------------------------------------------------------
-    def heuristica_grid(self,
-                        p1: list[int],
-                        p2: list[int],
-                        ) -> float:
-        """Heurística euclidiana ponderada para grid, levando em conta os
-        custos direcionais assimétricos (cima/baixo ≠ esquerda/direita)."""
-
-        if (p2[0]-p1[0])<0:
-            c1 = 3
-        else:
-            c1 = 2
-        if (p2[1]-p1[1])<0:
-            c2 = 7
-        else:
-            c2 = 5
-        h = sqrt(c1*(p1[0]-p2[0])*(p1[0]-p2[0]) + c2*(p1[1]-p2[1])*(p1[1]-p2[1]))
-        #h = c1*fabs(p1[0]-p2[0]) + c2*fabs(p1[1]-p2[1])
-        return h
-
-# -----------------------------------------------------------------------------
-# CUSTO UNIFORME - GRID
-# -----------------------------------------------------------------------------
-    def custo_uniforme_grid(self,
-                            inicio: list[int],
-                            fim:    list[int],
-                            mapa:   list[list[int]],
-                            nx:     int,
-                            ny:     int,
-                            ) -> Resultado:
-        """Busca de custo uniforme (Dijkstra) em grid: expande sempre o nó
-        de menor custo acumulado g, garantindo solução ótima."""
-
-        # Origem igual a destino
-        if inicio == fim:
-            return [inicio], 0
-        
-        # Fila de prioridade baseada em deque + inserção ordenada
-        lista: deque[NodeP] = deque()
-        t_inicio = tuple(inicio)
-        raiz = NodeP(None, t_inicio, 0, None, None, 0)
-        lista.append(raiz)
-    
-        # Controle de nós visitados
-        visitado: dict[tuple, NodeP] = {tuple(inicio): raiz}
-        
-        # loop de busca
-        while lista:
-            # remove o primeiro nó
-            atual = lista.popleft()
-            valor_atual: float = atual.v2
-    
-            # Chegou ao objetivo
-            if atual.estado == fim:
-                return self.exibirCaminho(atual), atual.v2
-    
-            # Gera sucessores - grid
-            filhos = self.sucessores_grid(atual.estado, nx, ny, mapa)
-    
-            for novo in filhos:
-                # custo acumulado até o sucessor
-                v2: float = valor_atual + novo[1]
-                v1: float = v2
-    
-                # Não visitado ou custo melhor
-                t_novo = tuple(novo[0])
-                if (t_novo not in visitado) or (v2 < visitado[t_novo].v2):
-                    filho = NodeP(atual, t_novo, v1, None, None, v2)
-                    visitado[t_novo] = filho
-                    self.inserir_ordenado(lista, filho)
-        return None
-
 # -----------------------------------------------------------------------------
 # CUSTO UNIFORME - GRAFO
 # -----------------------------------------------------------------------------
@@ -223,7 +89,7 @@ class buscaP(object):
                              nos:    list[Node],
                              grafo:  GrafoAdj,
                              ) -> Resultado:
-        """Busca de custo uniforme (Dijkstra) em grafo: expande sempre o nó
+        """Busca de custo uniforme em grafo: expande sempre o nó
         de menor custo acumulado g, garantindo solução ótima."""
 
         # Origem igual a destino
@@ -261,58 +127,6 @@ class buscaP(object):
                 if (novo[0] not in visitado) or (v2 < visitado[novo[0]].v2):
                     filho = NodeP(atual, novo[0], v1, None, None, v2)
                     visitado[novo[0]] = filho
-                    self.inserir_ordenado(lista, filho)
-        return None
-
-# -----------------------------------------------------------------------------
-# GREEDY - GRID
-# -----------------------------------------------------------------------------
-    def greedy_grid(self,
-                    inicio: list[int],
-                    fim:    list[int],
-                    mapa:   list[list[int]],
-                    nx:     int,
-                    ny:     int,
-                    ) -> Resultado:
-        """Busca gulosa em grid: ordena a fila apenas pela heurística h,
-        sem considerar o custo acumulado g (não garante solução ótima)."""
-
-        # Origem igual a destino
-        if inicio == fim:
-            return [inicio], 0
-        
-        # Fila de prioridade baseada em deque + inserção ordenada
-        lista: deque[NodeP] = deque()
-        t_inicio = tuple(inicio)
-        raiz = NodeP(None, t_inicio, 0, None, None, 0)
-        lista.append(raiz)
-    
-        # Controle de nós visitados
-        visitado: dict[tuple, NodeP] = {tuple(inicio): raiz}
-        
-        # loop de busca
-        while lista:
-            # remove o primeiro nó
-            atual = lista.popleft()
-            valor_atual: float = atual.v2
-    
-            # Chegou ao objetivo
-            if atual.estado == fim:
-                return self.exibirCaminho(atual), atual.v2
-            
-            # Gera sucessores
-            filhos = self.sucessores_grid(atual.estado, nx, ny, mapa)
-    
-            for novo in filhos:
-                # custo acumulado até o sucessor
-                v2: float = valor_atual + novo[1]
-                v1: float = self.heuristica_grid(novo[0], fim)
-    
-                # Não visitado ou custo melhor
-                t_novo = tuple(novo[0])
-                if (t_novo not in visitado) or (v2 < visitado[t_novo].v2):
-                    filho = NodeP(atual, t_novo, v1, None, None, v2)
-                    visitado[t_novo] = filho
                     self.inserir_ordenado(lista, filho)
         return None
 
@@ -368,58 +182,6 @@ class buscaP(object):
         return None
 
 # -----------------------------------------------------------------------------
-# A ESTRELA - GRID
-# -----------------------------------------------------------------------------
-    def a_estrela_grid(self,
-                       inicio: list[int],
-                       fim:    list[int],
-                       mapa:   list[list[int]],
-                       nx:     int,
-                       ny:     int,
-                       ) -> Resultado:
-        """A* em grid: combina custo acumulado g com heurística euclidiana
-        ponderada h para garantir solução ótima de forma eficiente."""
-
-        # Origem igual a destino
-        if inicio == fim:
-            return [inicio], 0
-        
-        # Fila de prioridade baseada em deque + inserção ordenada
-        lista: deque[NodeP] = deque()
-        t_inicio = tuple(inicio)
-        raiz = NodeP(None, t_inicio, 0, None, None, 0)
-        lista.append(raiz)
-    
-        # Controle de nós visitados
-        visitado: dict[tuple, NodeP] = {tuple(inicio): raiz}
-        
-        # loop de busca
-        while lista:
-            # remove o primeiro nó
-            atual = lista.popleft()
-            valor_atual: float = atual.v2
-    
-            # Chegou ao objetivo
-            if atual.estado == fim:
-                return self.exibirCaminho(atual), atual.v2
-            
-            # Gera sucessores
-            filhos = self.sucessores_grid(atual.estado, nx, ny, mapa)
-    
-            for novo in filhos:
-                # custo acumulado até o sucessor
-                v2: float = valor_atual + novo[1]
-                v1: float = v2 + self.heuristica_grid(novo[0], fim)
-    
-                # Não visitado ou custo melhor
-                t_novo = tuple(novo[0])
-                if (t_novo not in visitado) or (v2 < visitado[t_novo].v2):
-                    filho = NodeP(atual, t_novo, v1, None, None, v2)
-                    visitado[t_novo] = filho
-                    self.inserir_ordenado(lista, filho)
-        return None
-
-# -----------------------------------------------------------------------------
 # A ESTRELA - GRAFO
 # -----------------------------------------------------------------------------
     def a_estrela_grafo(self,
@@ -469,73 +231,6 @@ class buscaP(object):
                     visitado[novo[0]] = filho
                     self.inserir_ordenado(lista, filho)
         return None
-
-# -----------------------------------------------------------------------------
-# AIA ESTRELA - GRID
-# -----------------------------------------------------------------------------
-    def aia_estrela_grid(self,
-                         inicio: list[int],
-                         fim:    list[int],
-                         mapa:   list[list[int]],
-                         nx:     int,
-                         ny:     int,
-                         ) -> Resultado:
-        """AIA* (A* com aprofundamento iterativo) em grid: repete buscas
-        A* com limite f crescente (mínimo dos excedentes) até encontrar
-        o goal, mantendo consumo de memória linear."""
-
-        # Origem igual a destino
-        if inicio == fim:
-            return [inicio], 0
-        lim: float = self.heuristica_grid(inicio, fim)
-        
-        while True:
-            # Fila de prioridade baseada em deque + inserção ordenada
-            lista: deque[NodeP] = deque()
-            t_inicio = tuple(inicio)
-            raiz = NodeP(None, t_inicio, 0, None, None, 0)
-            lista.append(raiz)
-        
-            # Controle de nós visitados
-            visitado: dict[tuple, NodeP] = {tuple(inicio): raiz}
-            
-            # loop de busca
-            novo_lim: list[float] = []
-            while lista:
-                # remove o primeiro nó
-                atual = lista.popleft()
-                valor_atual: float = atual.v2
-        
-                # Chegou ao objetivo
-                if atual.estado == fim:
-                    return self.exibirCaminho(atual), atual.v2
-                
-                # Gera sucessores
-                filhos = self.sucessores_grid(atual.estado, nx, ny, mapa)
-        
-                for novo in filhos:
-                    # custo acumulado até o sucessor
-                    v2: float = valor_atual + novo[1]
-                    v1: float = v2 + self.heuristica_grid(novo[0], fim)
-                    
-                    if v1 <= lim:
-                        # Não visitado ou custo melhor
-                        t_novo = tuple(novo[0])
-                        if (t_novo not in visitado) or (v2 < visitado[t_novo].v2):
-                            filho = NodeP(atual, t_novo, v1, None, None, v2)
-                            visitado[t_novo] = filho
-                            self.inserir_ordenado(lista, filho)
-                    else:
-                        novo_lim.append(v1)
-
-            if not novo_lim:
-                return None
-
-            # Avança o limite para o menor f que excedeu o corte anterior
-            lim = min(novo_lim)
-            lista.clear()
-            visitado.clear()
-            novo_lim.clear()
 
 # -----------------------------------------------------------------------------
 # AIA ESTRELA - GRAFO
