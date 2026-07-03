@@ -5,9 +5,9 @@ Class containing search algorithms for weighted graphs.
 """
 
 
-from __future__       import annotations
-from collections      import deque
-from algorithms.NodeP import NodeP
+from __future__        import annotations
+from collections       import deque
+from algorithms.NodeP  import NodeP
 from math              import sqrt, fabs
 from typing            import Optional
 

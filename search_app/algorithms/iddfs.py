@@ -4,23 +4,23 @@ algorithms/iddfs.py
 Iterative Deepening DFS (IDDFS).
 """
 
-from search_result        import SearchResult
-from algorithms.BuscaNP   import UnweightedSearch
-from algorithms.conversor import Conversor
+from search_result             import SearchResult
+from algorithms.BuscaNP        import UnweightedSearch
+from algorithms.graphConverter import GraphConverter
 
 
 def search(start: str, goal: str, graph: dict,
            heuristic: dict = None, depth_limit: int = 100) -> SearchResult:
 
-    nos, grafo = Conversor.converter_grafo(graph)
+    nodes, formatted_graph = GraphConverter.convert_graph(graph)
 
-    caminho = UnweightedSearch().iterative_deepening_graph(start, goal, nos, grafo, depth_limit)
+    path = UnweightedSearch().iterative_deepening_graph(start, goal, nodes, formatted_graph, depth_limit)
 
-    if caminho is None:
+    if path is None:
         return SearchResult()
 
     return SearchResult(
-        path=caminho,
-        cost= Conversor.calcular_custo(caminho, graph),
-        depth=len(caminho) - 1
+        path=path,
+        cost= GraphConverter.calculate_cost(path, graph),
+        depth=len(path) - 1
     )

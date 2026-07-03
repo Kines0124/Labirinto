@@ -2,9 +2,9 @@
 
 <div align = "center">
 
-Interactive visualizer for search algorithms in artificial intelligence, developed as an academic project. The maze is procedurally generated on each run and traversed by the implemented algorithms, allowing visual comparison of search strategies in terms of solution cost and depth.
-
 <img src = "/resources/logo.png" alt = "Labirinto logo" title = "racoons">
+
+Interactive visualizer for search algorithms in artificial intelligence, developed as an academic project. The maze is procedurally generated on each run and traversed by the implemented algorithms, allowing visual comparison of search strategies in terms of solution cost and depth.
 
 </div>
 
