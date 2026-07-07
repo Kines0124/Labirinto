@@ -1,34 +1,34 @@
 """
 algorithms/astar.py
 ===================
-A* (A-estrela).
+A* (A-star).
 """
 
 
-from   search_result         import SearchResult
-from   algorithms.BuscaP     import buscaP
-from   algorithms.conversor  import Conversor
-import algorithms.heuristica as     heuristica
+from   search_result             import SearchResult
+from   algorithms.BuscaP         import WeightedSearch
+from   algorithms.graphConverter import GraphConverter
+import algorithms.heuristics     as     heuristics
 
 
 def search(start: str, goal: str, graph: dict,
            heuristic: dict = None, depth_limit: int = None,
            heuristic_name: str = 'manhattan') -> SearchResult:
 
-   pesos = heuristic if heuristic is not None else \
-         heuristica.calcular_heuristica_por_nome(heuristic_name, goal, graph)
+   weights = heuristic if heuristic is not None else \
+         heuristics.calculate_heuristic_by_name(heuristic_name, goal, graph)
 
-   nos, grafo = Conversor.converter_grafo_ponderado(graph)
-   resultado = buscaP().a_estrela_grafo(start, goal, nos, grafo, pesos)
+   nodes, formatted_graph = GraphConverter.convert_weighted_graph(graph)
+   result = WeightedSearch().a_star_graph(start, goal, nodes, formatted_graph, weights)
 
-   if resultado is None:
+   if result is None:
       return SearchResult()
 
-   caminho, custo = resultado  
-   reverso = caminho[::-1]        # inverte a tupla
+   path, cost = result  
+   reverse = path[::-1]       
 
    return SearchResult(
-      path=reverso,
-      cost=float(custo),
-      depth=len(caminho) - 1
+      path=reverse,
+      cost=float(cost),
+      depth=len(path) - 1
    )

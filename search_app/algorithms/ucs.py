@@ -1,29 +1,29 @@
 """
 algorithms/ucs.py
 =================
-Custo Uniforme (Uniform Cost Search — UCS).
+Uniform Cost Search (UCS).
 """
 
-from search_result        import SearchResult
-from algorithms.conversor import Conversor
-from algorithms.BuscaP    import buscaP
+from search_result             import SearchResult
+from algorithms.graphConverter import GraphConverter
+from algorithms.BuscaP         import WeightedSearch
 
 
 def search(start: str, goal: str, graph: dict,
            heuristic: dict = None, depth_limit: int = None) -> SearchResult:
    
-   nos, grafo = Conversor.converter_grafo_ponderado(graph)
+   nodes, formatted_graph = GraphConverter.convert_weighted_graph(graph)
 
-   resultado = buscaP().custo_uniforme_grafo(start, goal, nos, grafo)
+   result = WeightedSearch().uniform_cost_graph(start, goal, nodes, formatted_graph)
 
-   if resultado is None:
+   if result is None:
       return SearchResult()
    
-   caminho, custo = resultado
-   reverso = caminho[::-1]        # inverte a tupla
+   path, cost = result
+   reverse = path[::-1]       
 
    return SearchResult(
-      path=reverso,
-      cost=float(custo),
-      depth=len(caminho) - 1
+      path=reverse,
+      cost=float(cost),
+      depth=len(path) - 1
    )

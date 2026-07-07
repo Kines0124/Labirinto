@@ -1,7 +1,7 @@
 """
 algorithms/Node.py
 ===================
-Classe para implementação de nós em grafos ponderados.
+A class for implementing nodes in weighted graphs.
 """
 
 
@@ -9,7 +9,7 @@ from algorithms.Node import Node
 
 class NodeP(Node):
     
-    def __init__(self, pai=None, estado=None, v1=None,
-                 anterior=None, proximo=None, v2=None):
-        super().__init__(pai, estado, v1, anterior, proximo)
+    def __init__(self, parent=None, state=None, v1=None,
+                 previous=None, next=None, v2=None):
+        super().__init__(parent, state, v1, previous, next)
         self.v2 = v2

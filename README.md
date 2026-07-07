@@ -1,125 +1,131 @@
 # Labirinto
 
-Visualizador interativo de algoritmos de busca em inteligência artificial, desenvolvido como projeto acadêmico. O labirinto é gerado proceduralmente a cada execução e percorrido pelos algoritmos implementados, permitindo comparar visualmente as estratégias de busca em termos de custo e profundidade da solução.
+<div align = "center">
+
+<img src = "/resources/logo.png" alt = "Labirinto logo" title = "racoons">
+
+Interactive visualizer for search algorithms in artificial intelligence, developed as an academic project. The maze is procedurally generated on each run and traversed by the implemented algorithms, allowing visual comparison of search strategies in terms of solution cost and depth.
+
+</div>
 
 ---
 
-## 📋 Índice
+## 📋 Table of Contents
 
-- [Visão Geral](#visão-geral)
-- [Como o Labirinto é Gerado](#como-o-labirinto-é-gerado)
-- [Terrenos e Pesos](#terrenos-e-pesos)
-- [Algoritmos Implementados](#algoritmos-implementados)
+- [Overview](#overview)
+- [How the Maze Is Generated](#how-the-maze-is-generated)
+- [Terrains and Weights](#terrains-and-weights)
+- [Implemented Algorithms](#implemented-algorithms)
 - [Interface](#interface)
-- [Requisitos](#requisitos)
-- [Como Rodar](#como-rodar)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Créditos](#créditos)
+- [Requirements](#requirements)
+- [How to Run](#how-to-run)
+- [Project Structure](#project-structure)
+- [Credits](#credits)
 
 ---
 
-## Visão Geral
+## Overview
 
-A aplicação exibe um labirinto em grade representado como um **grafo ponderado**. O usuário escolhe um estado inicial, um estado objetivo e um algoritmo de busca. O visualizador executa o algoritmo e destaca o caminho encontrado no grafo, exibindo o custo total e a profundidade da solução.
+The application displays a grid-based maze represented as a **weighted graph**. The user chooses a start state, a goal state, and a search algorithm. The visualizer runs the algorithm and highlights the found path in the graph, showing the total cost and depth of the solution.
 
-A cada vez que o programa é iniciado (ou quando o botão **⟳ NOVO LABIRINTO** é pressionado), um labirinto diferente é gerado — garantindo que os algoritmos sejam avaliados em cenários variados.
-
----
-
-## Como o Labirinto é Gerado
-
-O labirinto é gerado por uma **versão aleatorizada do algoritmo de Kruskal**, que produz labirintos perfeitos — estruturas sem ciclos onde existe exatamente um caminho entre quaisquer dois pontos.
-
-### Funcionamento
-
-1. Todas as células são inicializadas isoladas (todas as paredes ativas).
-2. Todas as arestas possíveis entre células vizinhas são geradas e **embaralhadas aleatoriamente**.
-3. Para cada aresta `(u, v)`: se `u` e `v` pertencem a componentes distintos (verificado via **Union-Find com compressão de caminho e união por rank**), a parede entre eles é removida e os componentes são unidos.
-4. O processo se repete até que todas as células pertençam ao mesmo componente.
-
-O labirinto lógico tem dimensões **8×8 células**. Para representar as paredes de forma explícita, é utilizada uma expansão 2-para-1, resultando em um **grid expandido de 15×15**.
-
-> Além de garantir a conectividade total, o gerador adiciona passagens extras com uma probabilidade configurável (`EXTRA_EDGE_PROBABILITY = 0.45`), tornando o labirinto menos rígido e mais interessante para algoritmos de custo uniforme.
-
-Para reproduzir um labirinto específico, defina `MAZE_SEED` em `config.py` com um valor inteiro.
+Every time the program is started (or when the **⟳ NEW MAZE** button is pressed), a different maze is generated — ensuring the algorithms are evaluated on varied scenarios.
 
 ---
 
-## Terrenos e Pesos
+## How the Maze Is Generated
 
-Cada célula livre do labirinto recebe um tipo de terreno sorteado aleatoriamente. Os pesos dos terrenos influenciam o custo de travessia e são relevantes para algoritmos que consideram custo (UCS, A\*, Greedy, IDA\*).
+The maze is generated using a **randomized version inspired by Kruskal's algorithm**. Unlike a classic "perfect maze" (which has no cycles and exactly one path between any two points), this generator deliberately allows cycles, so that different algorithms can produce visibly different paths and cost/depth trade-offs become meaningful to compare.
 
-| Terreno   | Símbolo | Peso | Probabilidade |
-|-----------|---------|------|---------------|
-| Planície  | ■ claro | 1    | 50%           |
-| Floresta  | ■ verde | 2    | 25%           |
-| Pântano   | ■ oliva | 3    | 15%           |
-| Montanha  | ■ escuro| 5    | 10%           |
+### How It Works
+
+1. All cells start isolated (all walls active).
+2. All possible edges between neighboring cells are generated and **randomly shuffled**.
+3. For each edge `(u, v)`: if `u` and `v` belong to different components (checked via **Union-Find with path compression and union by rank**), the wall between them is removed and the components are merged.
+4. The process repeats until all cells belong to the same component.
+
+The logical maze has **8×8 cell** dimensions. To represent walls explicitly, a 2-to-1 expansion is used, resulting in an **expanded 15×15 grid**.
+
+> On top of this Kruskal-inspired base structure, the generator adds extra passages with a configurable probability (`EXTRA_EDGE_PROBABILITY = 0.45`). These extra edges intentionally introduce cycles, making the maze less rigid — and giving algorithms that consider cost (like UCS) genuinely different paths to choose between, rather than the single unique path a perfect maze would offer.
+
+To reproduce a specific maze, set `MAZE_SEED` in `config.py` to an integer value.
 
 ---
 
-## Algoritmos Implementados
+## Terrains and Weights
 
-### Busca Não-Informada
+Each free cell in the maze is randomly assigned a terrain type. Terrain weights affect traversal cost and are relevant for algorithms that take cost into account (UCS, A*, Greedy, IDA*).
 
-| Algoritmo | Descrição |
-|-----------|-----------|
-| **Amplitude (BFS)** | Explora em largura; garante o menor número de passos, mas ignora pesos. |
-| **Profundidade (DFS)** | Explora em profundidade; não garante otimalidade, pode não terminar em grafos com ciclos. |
-| **Profundidade Limitada (DLS)** | Variante do DFS com limite de profundidade configurável. |
-| **Aprofundamento Iterativo (IDDFS)** | Combina economia de memória do DFS com completude do BFS. |
-| **Bidirecional** | Busca simultânea a partir do início e do objetivo; encontra-se no meio. |
-| **Custo Uniforme (UCS)** | Expande o nó de menor custo acumulado; ótimo para grafos ponderados. |
+| Terrain    | Symbol      | Weight | Probability |
+|------------|-------------|--------|-------------|
+| Plain      | ■ light     | 1      | 50%         |
+| Forest     | ■ green     | 2      | 25%         |
+| Swamp      | ■ olive     | 3      | 15%         |
+| Mountain   | ■ dark      | 5      | 10%         |
 
-### Busca Informada (Heurística)
+---
 
-| Algoritmo | Descrição |
-|-----------|-----------|
-| **Greedy Best-First** | Guia-se apenas pela heurística; rápido, mas não garante otimalidade. |
-| **A\* (A-estrela)** | Combina custo real e heurística; ótimo e completo com heurística admissível. |
-| **IDA\* (A\* Iterativo)** | Variante do A\* com aprofundamento iterativo; usa menos memória que o A\*. |
+## Implemented Algorithms
 
-### Heurísticas disponíveis
+### Uninformed Search
 
-Para os algoritmos informados, o usuário pode escolher entre:
+| Algorithm | Description |
+|-----------|-------------|
+| **Breadth-First Search (BFS)** | Explores level by level; guarantees the fewest steps, but ignores weights. |
+| **Depth-First Search (DFS)** | Explores depth-first; does not guarantee optimality, may not terminate on graphs with cycles. |
+| **Depth-Limited Search (DLS)** | DFS variant with a configurable depth limit. |
+| **Iterative Deepening (IDDFS)** | Combines DFS's memory efficiency with BFS's completeness. |
+| **Bidirectional Search** | Searches simultaneously from the start and the goal; meets in the middle. |
+| **Uniform Cost Search (UCS)** | Expands the node with the lowest accumulated cost; optimal for weighted graphs. |
 
-- **Manhattan** *(padrão)*: soma das distâncias horizontais e verticais até o objetivo. Admissível e eficiente para grades ortogonais.
-- **Dijkstra (real)**: roda Dijkstra reverso a partir do objetivo para calcular o custo mínimo exato até cada nó. Heurística perfeita — nunca superestima.
+### Informed (Heuristic) Search
+
+| Algorithm | Description |
+|-----------|-------------|
+| **Greedy Best-First** | Guided only by the heuristic; fast, but does not guarantee optimality. |
+| **A\* (A-star)** | Combines actual cost and heuristic; optimal and complete with an admissible heuristic. |
+| **IDA\* (Iterative Deepening A\*)** | Iterative deepening variant of A*; uses less memory than A*. |
+
+### Available Heuristics
+
+For informed algorithms, the user can choose between:
+
+- **Manhattan** *(default)*: sum of horizontal and vertical distances to the goal. Admissible and efficient for orthogonal grids.
+- **Dijkstra (real)**: runs reverse Dijkstra from the goal to compute the exact minimum cost to each node. A perfect heuristic — never overestimates.
 
 ---
 
 ## Interface
 
-A interface é dividida em três painéis:
+The interface is divided into three panels:
 
-**Painel esquerdo — Controle**
-- Seleção do método de busca
-- Seleção da heurística (aparece automaticamente para Greedy, A\* e IDA\*)
-- Limite de profundidade (aparece para DLS e IDDFS)
-- Seleção de estado inicial e objetivo
-- Botões: Executar, Limpar, Novo Labirinto
-- Legenda de cores e terrenos
+**Left panel — Controls**
+- Search method selection
+- Heuristic selection (automatically shown for Greedy, A*, and IDA*)
+- Depth limit (shown for DLS and IDDFS)
+- Start and goal state selection
+- Buttons: Run, Clear, New Maze
+- Color and terrain legend
 
-**Painel central — Grafo**
-- Visualização do labirinto como grade colorida por terreno
-- Destaque do caminho encontrado em roxo
-- Marcação do estado inicial (azul) e objetivo (verde)
+**Center panel — Graph**
+- Visualization of the maze as a grid colored by terrain
+- Highlight of the found path in purple
+- Marking of the start state (blue) and goal state (green)
 
-**Painel direito — Resultado**
-- Custo total da solução
-- Profundidade da solução
-- Sequência completa de nós do caminho
-- Barra de status da execução
+**Right panel — Result**
+- Total cost of the solution
+- Depth of the solution
+- Full sequence of nodes in the path
+- Execution status bar
 
 ---
 
-## Requisitos
+## Requirements
 
-- **Python 3.10 ou superior** (testado com Python 3.11)
-- **tkinter** — incluso na instalação padrão do Python no Windows e macOS
-- **Pillow** — para renderização dos tilesets e spritesheets
+- **Python 3.10 or higher** (tested with Python 3.11)
+- **tkinter** — included in the standard Python installation on Windows and macOS
+- **Pillow** — for rendering tilesets and spritesheets
 
-> **Linux:** tkinter e Pillow podem precisar ser instalados separadamente:
+> **Linux:** tkinter and Pillow may need to be installed separately:
 > ```bash
 > # Ubuntu/Debian
 > sudo apt install python3-tk
@@ -132,93 +138,93 @@ A interface é dividida em três painéis:
 > sudo pacman -S tk
 > ```
 
-Instale as dependências externas com:
+Install the external dependencies with:
 ```bash
 pip install pillow
 ```
 
 ---
 
-## Como Rodar
+## How to Run
 
-### 1. Clone ou baixe o repositório
+### 1. Clone or download the repository
 
 ```bash
-git clone <url-do-repositorio>
+git clone <repository-url>
 cd Labirinto
 ```
 
-### 2. Verifique sua versão do Python
+### 2. Check your Python version
 
 ```bash
 python --version
-# ou
+# or
 python3 --version
 ```
 
-A versão deve ser **3.10 ou superior**.
+The version must be **3.10 or higher**.
 
-### 3. Execute a aplicação
+### 3. Run the application
 
 ```bash
 cd search_app
 python main.py
 ```
 
-> Em alguns sistemas, use `python3` em vez de `python`.
+> On some systems, use `python3` instead of `python`.
 
-### 4. (Opcional) Fixar um labirinto específico
+### 4. (Optional) Pin a specific maze
 
-Para sempre carregar o mesmo labirinto, edite a linha em `search_app/config.py`:
+To always load the same maze, edit the line in `search_app/config.py`:
 
 ```python
-MAZE_SEED: Optional[int] = None   # Altere None para um inteiro, ex.: 42
+MAZE_SEED: Optional[int] = None   # Change None to an integer, e.g.: 42
 ```
 
 ---
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 Labirinto/
 └── search_app/
-    ├── main.py              # Ponto de entrada; orquestra a aplicação
-    ├── config.py            # Configurações globais (cores, janela, grafo)
-    ├── maze_generator.py    # Geração do labirinto via Kruskal aleatorizado
-    ├── search_result.py     # Dataclass com o resultado de cada busca
+    ├── main.py              # Entry point; orchestrates the application
+    ├── config.py            # Global settings (colors, window, graph)
+    ├── maze_generator.py    # Maze generation via randomized Kruskal
+    ├── search_result.py     # Dataclass holding the result of each search
     ├── algorithms/
-    │   ├── __init__.py      # Registro central dos algoritmos (run_search)
-    │   ├── heuristica.py    # Heurísticas: Manhattan e Dijkstra reverso
-    │   ├── bfs.py           # Busca em Largura
-    │   ├── dfs.py           # Busca em Profundidade
-    │   ├── dls.py           # Profundidade Limitada
-    │   ├── iddfs.py         # Aprofundamento Iterativo
-    │   ├── bidi.py          # Busca Bidirecional
-    │   ├── ucs.py           # Custo Uniforme
+    │   ├── __init__.py      # Central algorithm registry (run_search)
+    │   ├── heuristica.py    # Heuristics: Manhattan and reverse Dijkstra
+    │   ├── bfs.py           # Breadth-First Search
+    │   ├── dfs.py           # Depth-First Search
+    │   ├── dls.py           # Depth-Limited Search
+    │   ├── iddfs.py         # Iterative Deepening
+    │   ├── bidi.py          # Bidirectional Search
+    │   ├── ucs.py           # Uniform Cost Search
     │   ├── greedy.py        # Greedy Best-First
-    │   ├── astar.py         # A* (A-estrela)
-    │   ├── ida_star.py      # IDA* (A* Iterativo)
-    │   ├── BuscaNP.py       # Infraestrutura de busca não-informada
-    │   ├── BuscaP.py        # Infraestrutura de busca informada
-    │   ├── Node.py          # Nó para buscas não-informadas
-    │   ├── NodeP.py         # Nó para buscas informadas (com custo)
-    │   └── conversor.py     # Converte o grafo do config para o formato dos algoritmos
+    │   ├── astar.py         # A* (A-star)
+    │   ├── ida_star.py      # IDA* (Iterative A*)
+    │   ├── BuscaNP.py       # Uninformed search infrastructure
+    │   ├── BuscaP.py        # Informed search infrastructure
+    │   ├── Node.py          # Node for uninformed searches
+    │   ├── NodeP.py         # Node for informed searches (with cost)
+    │   └── conversor.py     # Converts the config graph to the algorithms' format
     └── ui/
-        ├── control_panel.py # Painel esquerdo de controle
-        ├── graph_canvas.py  # Visualização do labirinto em canvas
-        └── result_panel.py  # Painel direito de resultados
+        ├── control_panel.py # Left control panel
+        ├── graph_canvas.py  # Maze visualization on canvas
+        └── result_panel.py  # Right results panel
 ```
 
 ---
 
-## Créditos
+## Credits
 
-### Geração do Labirinto
+### Maze Generation
 
-A implementação do algoritmo de Kruskal aleatorizado para geração de labirintos é baseada no artigo:
+The randomized Kruskal-based algorithm used for maze generation is based on the article:
 
 > **Jamis Buck** — *"Maze Generation: Kruskal's Algorithm"*  
-> The Buckblog, 3 de janeiro de 2011  
+> The Buckblog, January 3, 2011  
 > [https://weblog.jamisbuck.org/2011/1/3/maze-generation-kruskal-s-algorithm](https://weblog.jamisbuck.org/2011/1/3/maze-generation-kruskal-s-algorithm)
 
-O artigo descreve como adaptar o algoritmo de Kruskal — originalmente para árvores geradoras mínimas em grafos ponderados — para a geração de labirintos perfeitos, substituindo a seleção por menor peso por uma seleção aleatória das arestas. A estrutura Union-Find utilizada para detectar componentes conectados também é detalhada no artigo.
+The article describes how to adapt Kruskal's algorithm — originally designed for minimum spanning trees in weighted graphs — for generating perfect mazes, replacing lowest-weight selection with random edge selection. The Union-Find structure used to detect connected components is also detailed in the article. This project extends that base by additionally allowing extra edges (and thus cycles), as described above.

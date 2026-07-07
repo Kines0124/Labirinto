@@ -1,12 +1,13 @@
 """
 config.py
 =========
-Centraliza toda a configuração do problema e da interface.
 
-Modos de operação
+Centralizes all problem and interface configuration.
+
+Operating Modes
 -----------------
-MULTIVERSE_MODE = False  →  comportamento original (mapa único)
-MULTIVERSE_MODE = True   →  múltiplos mapas conectados por portais
+MULTIVERSE_MODE = False → original behavior (single map)
+MULTIVERSE_MODE = True → multiple maps connected by portals
 """
 
 from __future__     import annotations
@@ -16,22 +17,22 @@ from maze_generator import generate_kruskal_maze, maze_to_config_format
 import sys
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Parâmetros de geração
+# Generation parameters
 # ─────────────────────────────────────────────────────────────────────────────
 
 MAZE_LOGICAL_ROWS: int   = 8
 MAZE_LOGICAL_COLS: int   = 8
-MAZE_SEED: Optional[int] = None   # None = aleatório; ex.: 42 para fixo
+MAZE_SEED: Optional[int] = None   # None = random; e.g.: 42 for a fixed maze
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Construção do grafo (mapa único)
+# Graph construction (single map)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _build_graph( grid:    list[list[int]],
                   weights: list[list[float]],
                 ) -> dict[str, list[tuple[str, float]]]:
-    """Monta um grafo plano para configuração comum."""
+    """Builds a flat graph for the regular (single-map) configuration."""
     rows, cols = len(grid), len(grid[0])
     graph: dict[str, list[tuple[str, float]]] = {}
 
@@ -53,14 +54,14 @@ def _build_graph( grid:    list[list[int]],
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Construção do supergrafo (multiverso)
+# Supergraph construction (multiverse)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _build_super_graph(mv) -> dict[str, list[tuple[str, float]]]:
-    """Monta um único grafo plano com nós no formato "M{id}:(r,c)"."""
+    """Builds a single flat graph with nodes in the "M{id}:(r,c)" format."""
     super_graph: dict[str, list[tuple[str, float]]] = {}
 
-    # ── arestas intra-mapa ───────────────────────────────────────────────────
+    # ── intra-map edges ──────────────────────────────────────────────────────
     for i, maze in enumerate(mv.maps):
         prefix = f"M{i}:"
         local  = _build_graph(maze.grid_map, maze.grid_weights)
@@ -70,7 +71,7 @@ def _build_super_graph(mv) -> dict[str, list[tuple[str, float]]]:
                 (prefix + nb, cost) for nb, cost in neighbors
             ]
 
-    # ── arestas de portal ────────────────────────────────────────────────────
+    # ── portal edges ─────────────────────────────────────────────────────────
     for portal in mv.portals:
         node_a = f"M{portal.map_a}:({portal.row},{portal.col})"
         node_b = f"M{portal.map_b}:({portal.row},{portal.col})"
@@ -81,11 +82,11 @@ def _build_super_graph(mv) -> dict[str, list[tuple[str, float]]]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Aplicar resultado de geração — mapa único
+# Apply generation result — single map
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _apply(result) -> None:
-    """Aplica um MazeResult nos globais deste módulo (modo mapa único)."""
+    """Applies a MazeResult to this module's globals (single-map mode)."""
     m = sys.modules[__name__]
     gm, gw, gr, gc = maze_to_config_format(result)
     m.GRID_MAP       = gm
@@ -108,7 +109,7 @@ def _apply(result) -> None:
 
 
 def regenerate_maze(seed: Optional[int] = None) -> None:
-    """Regera o labirinto em modo mapa único."""
+    """Regenerates the maze in single-map mode."""
     _apply(generate_kruskal_maze(
         rows=MAZE_LOGICAL_ROWS,
         cols=MAZE_LOGICAL_COLS,
@@ -117,11 +118,11 @@ def regenerate_maze(seed: Optional[int] = None) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Aplicar resultado de geração — multiverso
+# Apply generation result — multiverse
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _apply_active_map(map_id: int) -> None:
-    """Atualiza GRID_MAP / TERRAIN_MAP / GRAPH para o mapa visualizado."""
+    """Updates GRID_MAP / TERRAIN_MAP / GRAPH for the map being viewed."""
     m = sys.modules[__name__]
     if m.MULTIVERSE is None:
         return
@@ -133,22 +134,22 @@ def _apply_active_map(map_id: int) -> None:
     m.GRID_COLS     = gc
     m.TERRAIN_MAP   = maz.terrain_map
     m.ACTIVE_MAP_ID = map_id
-    # Grafo local usado pela heurística Manhattan (por mapa)
+    # Local graph used by the Manhattan heuristic (per map)
     m.GRAPH         = _build_graph(gm, gw)
 
 
 def apply_multiverse(mv) -> None:
-    """Ativa o modo multiverso e atualiza todos os globais."""
+    """Activates multiverse mode and updates all globals."""
     m = sys.modules[__name__]
     m.MULTIVERSE      = mv
     m.SUPER_GRAPH     = _build_super_graph(mv)
     m.ACTIVE_MAP_ID   = 0
     m.MULTIVERSE_MODE = True
 
-    # Globais de grade: começa no mapa 0
+    # Grid globals: starts on map 0
     _apply_active_map(0)
 
-    # Estados e nós início/fim no espaço do supergrafo
+    # States and start/goal nodes in the supergraph space
     m.STATES     = list(m.SUPER_GRAPH.keys())
     gr = mv.maps[0].grid_rows
     gc = mv.maps[0].grid_cols
@@ -157,9 +158,9 @@ def apply_multiverse(mv) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Placeholders — preenchidos imediatamente por _apply()
+# Placeholders — filled in immediately by _apply()
 # ─────────────────────────────────────────────────────────────────────────────
-
+LANGUAGE:       str               = 'en'  # session-only; changed via the Settings popup, not persisted
 GRID_MAP:       list[list[int]]   = []
 GRID_WEIGHTS:   list[list[float]] = []
 GRID_ROWS:      int               = 0
@@ -173,14 +174,14 @@ GOAL_NODE:      str               = "(14,14)"
 NODE_POSITIONS: dict              = {}
 ACTIVE_METHOD:  str               = ''
 
-# Multiverso (inicialmente None / desativado)
+# Multiverse (initially None / disabled)
 MULTIVERSE_MODE: bool  = False
 MULTIVERSE             = None
 PORTAL_COST:     float = 1.0
 SUPER_GRAPH:     dict  = {}
 ACTIVE_MAP_ID:   int   = 0
 
-# Geração inicial em modo mapa único
+# Initial generation in single-map mode
 _apply(generate_kruskal_maze(
     rows=MAZE_LOGICAL_ROWS,
     cols=MAZE_LOGICAL_COLS,
@@ -189,7 +190,7 @@ _apply(generate_kruskal_maze(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Configurações de UI
+# UI settings
 # ─────────────────────────────────────────────────────────────────────────────
 
 SEARCH_METHODS: list[str] = [
@@ -209,7 +210,7 @@ COLORS: dict[str, str] = {
     'panel':           '#1A2018',
     'panel_border':    '#2A3828',   
 
-    'accent':          '#4F8EF7',   # azul royal — mantido
+    'accent':          '#4F8EF7',   # royal blue — kept as-is
     'accent2':         "#C98C47",  
     'index':           "#C46FFF",
     'success':         '#5AB87A',   
@@ -219,7 +220,7 @@ COLORS: dict[str, str] = {
     'text':            '#D8E0C8',   
     'text_dim':        '#788870',   
 
-    # tiles por terreno
+    # terrain tiles
     'tile_free':       '#243020',   
     'tile_w2':         '#1C2C18',  
     'tile_w3':         '#202818',   
@@ -227,17 +228,17 @@ COLORS: dict[str, str] = {
     'tile_wall':       '#141814',   
     'tile_border':     '#2A3828',   
 
-    # tile portal
+    # portal tile
     'tile_portal':     '#1A2430',
-    'tile_portal_glow':'#4F8EF7',   # mesmo azul do accent
+    'tile_portal_glow':'#4F8EF7',   # same blue as accent
 
-    # texto de peso
+    # weight text
     'weight_normal':   '#384830',
     'weight_medium':   '#786020',
     'weight_heavy':    '#584018',
     'weight_critical': '#782020',
 
-    # nós especiais
+    # special nodes
     'node_start':      '#1A2C40',   
     'node_goal':       '#1E3428',   
     'node_path':       '#2A3430',   
@@ -247,7 +248,7 @@ COLORS: dict[str, str] = {
     'node_glow_goal':  '#5AB87A',   
     'node_glow_path':  '#A87840',   
 
-    # arestas
+    # edges
     'edge_default':    '#2A3828',
     'edge_path':       '#4F8EF7',
     'edge_glow':       '#2A5898',
@@ -256,7 +257,7 @@ COLORS: dict[str, str] = {
 }
 
 WINDOW = {
-    'title':      'Visualizador interativo de algoritmos de busca — Labirinto',
+    'title':      'Interactive search-algorithm visualizer — Labirinto',
     'width':      1100,
     'height':     700,
     'min_width':  900,
