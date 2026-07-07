@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class SearchResult:
-    """Resultado padronizado de uma busca."""
+    """Standardized result of a search."""
     path:           list[str] = field(default_factory=list)
     cost:           float     = 0.0
     depth:          int       = 0
@@ -19,7 +19,7 @@ class SearchResult:
         return len(self.path) > 0
 
     def to_dict(self) -> dict:
-        """Compatibilidade com código legado que espera dicionário."""
+        """Compatibility with legacy code that expects a dictionary."""
         return {
             'path':           self.path,
             'cost':           self.cost,

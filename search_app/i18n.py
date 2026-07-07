@@ -101,6 +101,11 @@ STRINGS = {
         ),
         'assets_credit':             '\n\nASSETS E TILESETS EM PIXEL ART APRESENTADOS SÃO DA AUTORIA DOS DESENVOLVEDORES',
         'repo_url':                  '\n\nPara mais informações acesse o repositório: ',
+
+        # graph canvas — multiverse banner
+        'map_banner_start':          '◈  Mapa {mid}  —  INÍCIO',
+        'map_banner_goal':           '◈  Mapa {mid}  —  SAÍDA REAL',
+        'map_banner_default':        '◈  Mapa {mid}',
     },
     'en': {
         # header
@@ -183,6 +188,11 @@ STRINGS = {
         ),
         'assets_credit':             '\n\nTHE PIXEL-ART ASSETS AND TILESETS SHOWN WERE CREATED BY THE DEVELOPERS',
         'repo_url':                  '\n\nCheck the repository for more information: ',
+
+        # graph canvas — multiverse banner
+        'map_banner_start':          '◈  Map {mid}  —  START',
+        'map_banner_goal':           '◈  Map {mid}  —  REAL EXIT',
+        'map_banner_default':        '◈  Map {mid}',
     },
 }
 
