@@ -12,19 +12,22 @@ Interactive visualizer for search algorithms in artificial intelligence, develop
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [How the Maze Is Generated](#how-the-maze-is-generated)
-- [Terrains and Weights](#terrains-and-weights)
-- [Implemented Algorithms](#implemented-algorithms)
-- [Interface](#interface)
-- [Requirements](#requirements)
-- [How to Run](#how-to-run)
-- [Project Structure](#project-structure)
-- [Credits](#credits)
+* [Overview](#overview-dart)
+* [How the Maze Is Generated](#how-the-maze-is-generated-mag_right)
+    - [How It Works](#how-it-works)
+* [Terrains and Weights](#terrains-and-weights-four_leaf_clover)
+* [Implemented Algorithms](#implemented-algorithms-bulb)
+    - [Uninformed Search](#uninformed-search)
+    - [Informed (Heuristic) Search](#informed-heuristic-search)
+    - [Available Heuristics](#available-heuristics)
+* [Interface](#interface-computer)
+* [Requirements](#requirements-pushpin)
+* [How to Run](#how-to-run-rocket)
+* [Credits](#credits-tada)
 
 ---
 
-## Overview
+## Overview :dart:
 
 The application displays a grid-based maze represented as a **weighted graph**. The user chooses a start state, a goal state, and a search algorithm. The visualizer runs the algorithm and highlights the found path in the graph, showing the total cost and depth of the solution.
 
@@ -32,7 +35,7 @@ Every time the program is started (or when the **⟳ NEW MAZE** button is presse
 
 ---
 
-## How the Maze Is Generated
+## How the Maze Is Generated :mag_right:
 
 The maze is generated using a **randomized version inspired by Kruskal's algorithm**. Unlike a classic "perfect maze" (which has no cycles and exactly one path between any two points), this generator deliberately allows cycles, so that different algorithms can produce visibly different paths and cost/depth trade-offs become meaningful to compare.
 
@@ -51,7 +54,7 @@ To reproduce a specific maze, set `MAZE_SEED` in `config.py` to an integer value
 
 ---
 
-## Terrains and Weights
+## Terrains and Weights :four_leaf_clover:
 
 Each free cell in the maze is randomly assigned a terrain type. Terrain weights affect traversal cost and are relevant for algorithms that take cost into account (UCS, A*, Greedy, IDA*).
 
@@ -64,7 +67,7 @@ Each free cell in the maze is randomly assigned a terrain type. Terrain weights 
 
 ---
 
-## Implemented Algorithms
+## Implemented Algorithms :bulb:
 
 ### Uninformed Search
 
@@ -90,11 +93,12 @@ Each free cell in the maze is randomly assigned a terrain type. Terrain weights 
 For informed algorithms, the user can choose between:
 
 - **Manhattan** *(default)*: sum of horizontal and vertical distances to the goal. Admissible and efficient for orthogonal grids.
+- **Euclidean**: Calculated using the Pythagorean theorem, it guarantees finding the shortest path as long as it never overestimates the true distance.
 - **Dijkstra (real)**: runs reverse Dijkstra from the goal to compute the exact minimum cost to each node. A perfect heuristic — never overestimates.
 
 ---
 
-## Interface
+## Interface :computer:
 
 The interface is divided into three panels:
 
@@ -119,7 +123,7 @@ The interface is divided into three panels:
 
 ---
 
-## Requirements
+## Requirements :pushpin:
 
 - **Python 3.10 or higher** (tested with Python 3.11)
 - **tkinter** — included in the standard Python installation on Windows and macOS
@@ -145,16 +149,16 @@ pip install pillow
 
 ---
 
-## How to Run
+## How to Run :rocket:
 
-### 1. Clone or download the repository
+**1. Clone or download the repository**
 
 ```bash
 git clone <repository-url>
 cd Labirinto
 ```
 
-### 2. Check your Python version
+**2. Check your Python version**
 
 ```bash
 python --version
@@ -164,7 +168,7 @@ python3 --version
 
 The version must be **3.10 or higher**.
 
-### 3. Run the application
+**3. Run the application**
 
 ```bash
 cd search_app
@@ -173,7 +177,7 @@ python main.py
 
 > On some systems, use `python3` instead of `python`.
 
-### 4. (Optional) Pin a specific maze
+**4. (Optional) Pin a specific maze**
 
 To always load the same maze, edit the line in `search_app/config.py`:
 
@@ -183,43 +187,9 @@ MAZE_SEED: Optional[int] = None   # Change None to an integer, e.g.: 42
 
 ---
 
-## Project Structure
+## Credits :tada:
 
-```
-Labirinto/
-└── search_app/
-    ├── main.py              # Entry point; orchestrates the application
-    ├── config.py            # Global settings (colors, window, graph)
-    ├── maze_generator.py    # Maze generation via randomized Kruskal
-    ├── search_result.py     # Dataclass holding the result of each search
-    ├── algorithms/
-    │   ├── __init__.py      # Central algorithm registry (run_search)
-    │   ├── heuristica.py    # Heuristics: Manhattan and reverse Dijkstra
-    │   ├── bfs.py           # Breadth-First Search
-    │   ├── dfs.py           # Depth-First Search
-    │   ├── dls.py           # Depth-Limited Search
-    │   ├── iddfs.py         # Iterative Deepening
-    │   ├── bidi.py          # Bidirectional Search
-    │   ├── ucs.py           # Uniform Cost Search
-    │   ├── greedy.py        # Greedy Best-First
-    │   ├── astar.py         # A* (A-star)
-    │   ├── ida_star.py      # IDA* (Iterative A*)
-    │   ├── BuscaNP.py       # Uninformed search infrastructure
-    │   ├── BuscaP.py        # Informed search infrastructure
-    │   ├── Node.py          # Node for uninformed searches
-    │   ├── NodeP.py         # Node for informed searches (with cost)
-    │   └── conversor.py     # Converts the config graph to the algorithms' format
-    └── ui/
-        ├── control_panel.py # Left control panel
-        ├── graph_canvas.py  # Maze visualization on canvas
-        └── result_panel.py  # Right results panel
-```
-
----
-
-## Credits
-
-### Maze Generation
+**Maze Generation**
 
 The randomized Kruskal-based algorithm used for maze generation is based on the article:
 
