@@ -258,8 +258,8 @@ COLORS: dict[str, str] = {
 
 WINDOW = {
     'title':      'Interactive search-algorithm visualizer — Labirinto',
-    'width':      1100,
-    'height':     700,
+    'width':      1420,
+    'height':     900,
     'min_width':  900,
     'min_height': 620,
 }
