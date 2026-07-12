@@ -1,13 +1,13 @@
 """
 algorithms/__init__.py
 ======================
-Registro central dos algoritmos de busca.
+Central registry of search algorithms.
 """
 
 
 from search_result import SearchResult
 
-# ── imports dos algoritmos ────────────────────────────────────────────────────
+# ── algorithm imports ──────────────────────────────────────────────────────
 
 from algorithms.bfs      import search as bfs_search      
 from algorithms.dfs      import search as dfs_search
@@ -20,7 +20,7 @@ from algorithms.astar    import search as astar_search
 from algorithms.ida_star import search as ida_star_search
 
 
-# ── registro: nome do método → função ────────────────────────────────────────
+# ── registry: method name → function ────────────────────────────────────────
 
 REGISTRY: dict[str, callable] = {
     'Amplitude (BFS)':                  bfs_search,     

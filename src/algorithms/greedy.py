@@ -4,9 +4,10 @@ algorithms/greedy.py
 Greedy Best-First Search.
 """
 
+
 from   search_result              import SearchResult
-from   algorithms.BuscaP          import WeightedSearch
-from   algorithms.graphConverter  import GraphConverter
+from   algorithms.weighted_search import WeightedSearch
+from   algorithms.graph_converter import GraphConverter
 import algorithms.heuristics      as     heuristics
 
 

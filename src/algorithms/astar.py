@@ -5,10 +5,10 @@ A* (A-star).
 """
 
 
-from   search_result             import SearchResult
-from   algorithms.BuscaP         import WeightedSearch
-from   algorithms.graphConverter import GraphConverter
-import algorithms.heuristics     as     heuristics
+from   search_result              import SearchResult
+from   algorithms.weighted_search import WeightedSearch
+from   algorithms.graph_converter import GraphConverter
+import algorithms.heuristics      as     heuristics
 
 
 def search(start: str, goal: str, graph: dict,

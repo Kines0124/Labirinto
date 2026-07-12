@@ -7,7 +7,7 @@ Class containing search algorithms for unweighted graphs.
 
 from __future__      import annotations
 from collections     import deque
-from algorithms.Node import Node
+from algorithms.node import Node
 from typing          import Optional
 
 

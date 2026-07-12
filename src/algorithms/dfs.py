@@ -4,9 +4,10 @@ algorithms/dfs.py
 Depth-First Search (DFS).
 """
 
-from search_result             import SearchResult
-from algorithms.BuscaNP        import UnweightedSearch
-from algorithms.graphConverter import GraphConverter
+
+from search_result                import SearchResult
+from algorithms.unweighted_search import UnweightedSearch
+from algorithms.graph_converter   import GraphConverter
 
 
 def search(start: str, goal: str, graph: dict,

@@ -5,11 +5,11 @@ Class containing search algorithms for weighted graphs.
 """
 
 
-from __future__        import annotations
-from collections       import deque
-from algorithms.NodeP  import NodeP
-from math              import sqrt, fabs
-from typing            import Optional
+from __future__                 import annotations
+from collections                import deque
+from algorithms.weighted_node   import WeightedNode
+from math                       import sqrt, fabs
+from typing                     import Optional
 
 
 # Helper types for readability
@@ -41,8 +41,8 @@ class WeightedSearch(object):
 # INSERTS INTO THE LIST KEEPING IT SORTED
 # --------------------------------------------------------------------------
     def insert_sorted(self,
-                      queue: deque[NodeP],
-                      node:  NodeP,
+                      queue: deque[WeightedNode],
+                      node:  WeightedNode,
                       ) -> None:
         """Inserts *node* into the deque keeping it sorted in ascending order
         by v1 (cost f = g + h), using linear insertion."""
@@ -57,7 +57,7 @@ class WeightedSearch(object):
 # --------------------------------------------------------------------------
 # DISPLAYS THE PATH FOUND IN THE SEARCH TREE
 # --------------------------------------------------------------------------
-    def show_path(self, node: NodeP) -> Path:
+    def show_path(self, node: WeightedNode) -> Path:
         """Reconstructs the path from *node* back to the root by following
         the parent pointers, returning the list of states in reverse order."""
 
@@ -97,12 +97,12 @@ class WeightedSearch(object):
             return [start], 0
         
         # Priority queue based on deque + sorted insertion
-        queue: deque[NodeP] = deque()
-        root = NodeP(None, start, 0, None, None, 0)
+        queue: deque[WeightedNode] = deque()
+        root = WeightedNode(None, start, 0, None, None, 0)
         queue.append(root)
     
         # Tracking of visited nodes
-        visited: dict[NodeId, NodeP] = {start: root}
+        visited: dict[NodeId, WeightedNode] = {start: root}
 
         # search loop
         while queue:
@@ -125,7 +125,7 @@ class WeightedSearch(object):
     
                 # Not visited or better cost
                 if (child[0] not in visited) or (cost_so_far < visited[child[0]].v2):
-                    new_node = NodeP(current, child[0], priority, None, None, cost_so_far)
+                    new_node = WeightedNode(current, child[0], priority, None, None, cost_so_far)
                     visited[child[0]] = new_node
                     self.insert_sorted(queue, new_node)
         return None
@@ -148,12 +148,12 @@ class WeightedSearch(object):
             return [start], 0
         
         # Priority queue based on deque + sorted insertion
-        queue: deque[NodeP] = deque()
-        root = NodeP(None, start, 0, None, None, 0)
+        queue: deque[WeightedNode] = deque()
+        root = WeightedNode(None, start, 0, None, None, 0)
         queue.append(root)
     
         # Tracking of visited nodes
-        visited: dict[NodeId, NodeP] = {start: root}
+        visited: dict[NodeId, WeightedNode] = {start: root}
         
         # search loop
         while queue:
@@ -176,7 +176,7 @@ class WeightedSearch(object):
     
                 # Not visited or better cost
                 if (child[0] not in visited) or (cost_so_far < visited[child[0]].v2):
-                    new_node = NodeP(current, child[0], priority, None, None, cost_so_far)
+                    new_node = WeightedNode(current, child[0], priority, None, None, cost_so_far)
                     visited[child[0]] = new_node
                     self.insert_sorted(queue, new_node)
         return None
@@ -199,12 +199,12 @@ class WeightedSearch(object):
             return [start], 0
         
         # Priority queue based on deque + sorted insertion
-        queue: deque[NodeP] = deque()
-        root = NodeP(None, start, 0, None, None, 0)
+        queue: deque[WeightedNode] = deque()
+        root = WeightedNode(None, start, 0, None, None, 0)
         queue.append(root)
     
         # Tracking of visited nodes
-        visited: dict[NodeId, NodeP] = {start: root}
+        visited: dict[NodeId, WeightedNode] = {start: root}
         
         # search loop
         while queue:
@@ -227,7 +227,7 @@ class WeightedSearch(object):
     
                 # Not visited or better cost
                 if (child[0] not in visited) or (cost_so_far < visited[child[0]].v2):
-                    new_node = NodeP(current, child[0], priority, None, None, cost_so_far)
+                    new_node = WeightedNode(current, child[0], priority, None, None, cost_so_far)
                     visited[child[0]] = new_node
                     self.insert_sorted(queue, new_node)
         return None
@@ -252,10 +252,10 @@ class WeightedSearch(object):
         limit: float = weights[start]
 
         while True:
-            queue: deque[NodeP] = deque()
-            root = NodeP(None, start, 0, None, None, 0)
+            queue: deque[WeightedNode] = deque()
+            root = WeightedNode(None, start, 0, None, None, 0)
             queue.append(root)
-            visited: dict[NodeId, NodeP] = {start: root}
+            visited: dict[NodeId, WeightedNode] = {start: root}
             new_limits: list[float] = []
 
             while queue:
@@ -278,7 +278,7 @@ class WeightedSearch(object):
                     if priority <= limit:
                         # Not visited or better cost
                         if (child[0] not in visited) or (cost_so_far < visited[child[0]].v2):
-                            new_node = NodeP(current, child[0], priority, None, None, cost_so_far)
+                            new_node = WeightedNode(current, child[0], priority, None, None, cost_so_far)
                             visited[child[0]] = new_node
                             self.insert_sorted(queue, new_node)
                     else:
@@ -305,12 +305,12 @@ class WeightedSearch(object):
         # Priority queue based on deque + sorted insertion
         path: list[Path] = []
         while True:
-            queue: deque[NodeP] = deque()
-            root = NodeP(None, start, 0, None, None, 0)
+            queue: deque[WeightedNode] = deque()
+            root = WeightedNode(None, start, 0, None, None, 0)
             queue.append(root)
         
             # Tracking of visited nodes
-            visited: dict[NodeId, NodeP] = {start: root}
+            visited: dict[NodeId, WeightedNode] = {start: root}
             
             # search loop
             while queue:
@@ -350,7 +350,7 @@ class WeightedSearch(object):
         
                     # Not visited or better cost
                     if (child[0] not in visited) or (cost_so_far < visited[child[0]].v2):
-                        new_node = NodeP(current, child[0], priority, None, None, cost_so_far)
+                        new_node = WeightedNode(current, child[0], priority, None, None, cost_so_far)
                         visited[child[0]] = new_node
                         self.insert_sorted(queue, new_node)
         return None

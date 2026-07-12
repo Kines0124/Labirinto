@@ -5,9 +5,9 @@ A class for implementing nodes in weighted graphs.
 """
 
 
-from algorithms.Node import Node
+from algorithms.node import Node
 
-class NodeP(Node):
+class WeightedNode(Node):
     
     def __init__(self, parent=None, state=None, v1=None,
                  previous=None, next=None, v2=None):
