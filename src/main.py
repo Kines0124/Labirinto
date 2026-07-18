@@ -147,79 +147,58 @@ class SearchApp(tk.Tk):
  
     def _show_settings(self):
         """Opens the settings popup (currently: language selection only)."""
-        popup = tk.Toplevel(self)
-        popup.title(t('settings_title'))
-        popup.configure(bg=COLORS['panel'])
-        popup.resizable(False, False)
-        popup.transient(self)   # stays on top of the main window
-        popup.grab_set()        # modal: blocks interaction with main window
- 
-        w, h = 360, 260
- 
-        main_frame = tk.Frame(popup, bg=COLORS['panel'])
-        main_frame.pack(expand=True, fill='both', padx=20, pady=10)
- 
-        header_lbl = tk.Label(main_frame, text=t('settings_header'),
+        win = tk.Toplevel(self)
+        win.title(t('settings_title'))
+        win.resizable(False, False)
+        win.configure(bg=COLORS['panel'])
+        win.grab_set()
+
+        w, h = 380, 190
+        win.withdraw()
+        self.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width()  - w) // 2
+        y = self.winfo_y() + (self.winfo_height() - h) // 2
+        win.geometry(f'{w}x{h}+{x}+{y}')
+        win.deiconify()
+
+        tk.Label(win, text=t('settings_title'),
                  font=self._fonts['title'],
-                 bg=COLORS['panel'], fg=COLORS['accent']
-                 )
-        header_lbl.pack(pady=(10, 15))
- 
-        lang_lbl = tk.Label(main_frame, text=t('language_label'),
-                 font=self._fonts['section'],
-                 bg=COLORS['panel'], fg=COLORS['text_dim'],
-                 anchor='w')
-        lang_lbl.pack(fill='x', pady=(0, 6))
- 
-        lang_var = tk.StringVar(value=get_language())
- 
-        options_frame = tk.Frame(main_frame, bg=COLORS['panel'])
-        options_frame.pack(anchor='center')
- 
-        small_font = font.Font(family='Courier', size=8)
- 
-        radio_btns: dict[str, tk.Radiobutton] = {}
-        for code, key in (('pt', 'language_pt'), ('en', 'language_en')):
-            rb = tk.Radiobutton(
-                options_frame, text=t(key), value=code,
-                variable=lang_var,
-                font=small_font,
-                bg=COLORS['panel'], fg=COLORS['text_dim'],
-                selectcolor=COLORS['bg'],
-                activebackground=COLORS['panel'],
-                anchor='w', padx=4,
-                command=lambda c=code: _select_language(c),
-            )
-            rb.pack(anchor='w', pady=1)
-            radio_btns[code] = rb
- 
-        close_btn = tk.Button(
-            main_frame, text=t('close'),
-            font=self._fonts['label'], relief='flat', cursor='hand2',
-            bg=COLORS['accent'], fg='#ffffff',
-            activebackground=COLORS['node_glow_start'], activeforeground='#ffffff',
-            padx=30, pady=8,
-            command=popup.destroy,
-        )
-        close_btn.pack(side='bottom', pady=20)
- 
-        def _select_language(lang: str):
+                 bg=COLORS['panel'], fg=COLORS['accent']).pack(pady=(18, 8))
+
+        tk.Label(win, text=t('language_label'),
+                 font=self._fonts['label'],
+                 bg=COLORS['panel'], fg=COLORS['text']).pack(pady=(0, 12))
+
+        btn_row = tk.Frame(win, bg=COLORS['panel'])
+        btn_row.pack(pady=4)
+
+        def _select(lang: str):
             """Applies the chosen language and refreshes both the main
             window AND this popup's own widgets immediately — otherwise
             the popup would only pick up the new language the next time
             it's opened."""
             self._apply_language(lang)
-            popup.title(t('settings_title'))
-            header_lbl.config(text=t('settings_header'))
-            lang_lbl.config(text=t('language_label'))
-            for code, key in (('pt', 'language_pt'), ('en', 'language_en')):
-                radio_btns[code].config(text=t(key))
-            close_btn.config(text=t('close'))
- 
-        popup.update_idletasks()
-        px = self.winfo_x() + (self.winfo_width()  - w) // 2
-        py = self.winfo_y() + (self.winfo_height() - h) // 2
-        popup.geometry(f'{w}x{h}+{px}+{py}')
+            win.destroy()
+
+        def _lang_button(parent, label: str, lang_code: str):
+            """Draws language button."""
+            active = get_language() == lang_code
+            return tk.Button(
+                parent, text=label, font=self._fonts['label'],
+                bg=COLORS['accent'] if active else COLORS['panel'],
+                fg='#ffffff' if active else COLORS['text'],
+                activebackground=COLORS['accent'], activeforeground='#ffffff',
+                relief='flat', cursor='hand2', padx=16, pady=6,
+                command=lambda: _select(lang_code))
+
+        _lang_button(btn_row, 'English', 'en').pack(side='left', padx=6)
+        _lang_button(btn_row, 'Português', 'pt').pack(side='left', padx=6) 
+
+        tk.Button(win, text=t('close'),
+                  font=self._fonts['label'],
+                  bg=COLORS['panel'], fg=COLORS['text_dim'],
+                  relief='flat', cursor='hand2',
+                  command=win.destroy).pack(pady=14)
  
     def _apply_language(self, lang: str):
         """Switches the active language (session-only) and refreshes UI text."""
